@@ -33,19 +33,16 @@ public class PlayerController : MonoBehaviour
 
     private void OnEnable()
     {
-        var action = playerInput.actions.FindAction("Move");
-        if (action != null) action.performed += OnMove;
-    }
-
-    private void OnMove(InputAction.CallbackContext obj)
-    {
-        moveInput = obj.ReadValue<Vector2>();
+        playerInput.actions.FindAction("Move").performed += OnMove;
+        playerInput.actions.FindAction("Move").canceled +=
+            context => { moveInput = Vector2.zero; };
+        playerInput.actions.FindAction("Interact").performed += OnInteract;
     }
 
     private void OnDisable()
     {
-        var action = playerInput.actions.FindAction("Move");
-        if (action != null) action.performed -= OnMove;
+        playerInput.actions.FindAction("Move").performed -= OnMove;
+        playerInput.actions.FindAction("Interact").performed -= OnInteract;
     }
 
     /// <summary>
@@ -112,12 +109,14 @@ public class PlayerController : MonoBehaviour
     public void SetCameraRelative(bool enabled) => cameraRelativeMovement = enabled;
     public void SetCameraTransform(Transform t) => cameraTransform = t;
 
-    private void Update()
+    private void OnMove(InputAction.CallbackContext obj)
     {
-        if(Keyboard.current.eKey.wasPressedThisFrame)
-        {
-            InteractOM.Interact();
-        }
+        moveInput = obj.ReadValue<Vector2>();
+    }
+    
+    private void OnInteract(InputAction.CallbackContext obj)
+    { 
+        InteractOM.Interact();
     }
 }
 
