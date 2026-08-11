@@ -46,6 +46,8 @@ public class PortaController : MonoBehaviour
     {
         if (!isOpen)
         {
+            SaveSystem.Instance.SetPlayerLevel(2);
+            SaveSystem.Instance.SaveDataInFile(0);
             anim.StopPlayback();
             anim.Play("PortaAbrindo");
             isOpen = true;
