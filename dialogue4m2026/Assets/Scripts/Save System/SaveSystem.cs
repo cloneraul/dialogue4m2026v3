@@ -35,10 +35,22 @@ public class SaveSystem : MonoBehaviour
         saveDatas[slot].playerLevel = level;
     }
 
+    public int GetPlayerLevel(int slot = 0)
+    {
+        return saveDatas[slot].playerLevel;
+    }
+
     public void SetPlayerName(string playerName, int slot = 0)
     {
         saveDatas[slot].playerName = playerName;
     }
+
+    public string GetPlayerName(int slot = 0)
+    {
+        return saveDatas[slot].playerName;
+    }
+    
+    
 
     public void SaveDataInFile(int slot = 0)
     {
