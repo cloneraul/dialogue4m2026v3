@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Text;
 using UnityEngine;
 using UnityEngine.Windows;
 using File = System.IO.File;
@@ -25,52 +27,90 @@ public class SaveSystem : MonoBehaviour
     }
     
     private string dataPath;
-    private List<SaveData> saveDatas;
+    [SerializeField] private List<SaveData> saveDatas;
     
 
     public void SetPlayerLevel(int level, int slot = 0)
     {
-        saveDatas[slot].PlayerLevel = level;
+        saveDatas[slot].playerLevel = level;
+    }
+
+    public void SetPlayerName(string playerName, int slot = 0)
+    {
+        saveDatas[slot].playerName = playerName;
     }
 
     public void SaveDataInFile(int slot = 0)
     {
-        File.WriteAllText(dataPath+slot,saveDatas[slot].ToJson());
+        File.WriteAllText(dataPath+slot,Encryptor.Encrypt(saveDatas[slot].ToJson()));
     }
 
     public bool LoadDataInFile(int slot = 0)
     {
         if (!File.Exists(dataPath + slot)) return false;
-        return saveDatas[slot].FromJson(File.ReadAllText(dataPath + slot));
+        saveDatas[slot].FromJson(Encryptor.Decrypted(File.ReadAllText(dataPath + slot)));
+        return true;
     }
     
     [Serializable]
     public class SaveData
     {
-        private int playerLevel;
-        public int PlayerLevel { 
-            get => playerLevel; 
-            set => playerLevel = value; }
+        public int playerLevel;
+        public string playerName;
         
-        public SaveData(int playerLevel=1)
+        public SaveData(int playerLevel=1, string playerName="")
         {
             this.playerLevel = playerLevel;
+            this.playerName = playerName;
         }
         
         public string ToJson(){
             return JsonUtility.ToJson(this);
         }
 
-        public bool FromJson(string json)
+        public void FromJson(string json)
         {
-            SaveData saveData = JsonUtility.FromJson<SaveData>(json);
-            if (saveData == null) return false;
-            playerLevel = saveData.playerLevel;
-            return true;
+            JsonUtility.FromJsonOverwrite(json, this);
         }
     }
     
-    
+    private class Encryptor
+    {
+        public static string IV = "1a1a1a1a1a1a1a1a";
+        public static string Key = "1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a13";
+
+        public static string Encrypt(string decrypted)
+        {
+            byte[] textbytes = ASCIIEncoding.ASCII.GetBytes(decrypted);
+            AesCryptoServiceProvider endec = new AesCryptoServiceProvider();
+            endec.BlockSize = 128;
+            endec.KeySize = 256;
+            endec.IV = ASCIIEncoding.ASCII.GetBytes(IV);
+            endec.Key = ASCIIEncoding.ASCII.GetBytes(Key);
+            endec.Padding = PaddingMode.PKCS7;
+            endec.Mode = CipherMode.CBC;
+            ICryptoTransform icrypt = endec.CreateEncryptor(endec.Key, endec.IV);
+            byte[] enc = icrypt.TransformFinalBlock(textbytes, 0, textbytes.Length);
+            icrypt.Dispose();
+            return Convert.ToBase64String(enc);
+        }
+
+        public static string Decrypted(string encrypted)
+        {
+            byte[] textbytes = Convert.FromBase64String(encrypted);
+            AesCryptoServiceProvider endec = new AesCryptoServiceProvider();
+            endec.BlockSize = 128;
+            endec.KeySize = 256;
+            endec.IV = ASCIIEncoding.ASCII.GetBytes(IV);
+            endec.Key = ASCIIEncoding.ASCII.GetBytes(Key);
+            endec.Padding = PaddingMode.PKCS7;
+            endec.Mode = CipherMode.CBC;
+            ICryptoTransform icrypt = endec.CreateDecryptor(endec.Key, endec.IV);
+            byte[] enc = icrypt.TransformFinalBlock(textbytes, 0, textbytes.Length);
+            icrypt.Dispose();
+            return System.Text.ASCIIEncoding.ASCII.GetString(enc);
+        }
+    }
     
 
 

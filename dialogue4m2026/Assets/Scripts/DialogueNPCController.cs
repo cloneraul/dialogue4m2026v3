@@ -52,6 +52,7 @@ public class DialogueNPCController : MonoBehaviour
 
     private void ShowDialogue()
     {
+        SaveSystem.Instance.LoadDataInFile();
         Debug.Log(NpcName+": "+DialogueLines[0]);
         DialogueOM.NameSet(NpcName);
         DialogueOM.PortraitSet(NpcPortrait);
