@@ -148,7 +148,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c93fd56508ff9042bdb3e911d927597, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SaveSystem
-  saveDatas: []
+  saveDatas:
+  - playerLevel: 1
+    playerName: 
+  - playerLevel: 1
+    playerName: 
+  - playerLevel: 1
+    playerName: 
+  - playerLevel: 1
+    playerName: 
 --- !u!4 &1304458686
 Transform:
   m_ObjectHideFlags: 0

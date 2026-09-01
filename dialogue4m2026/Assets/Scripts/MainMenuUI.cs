@@ -24,7 +24,7 @@ public class MainMenuUI : MonoBehaviour
         // Garante que o painel principal esteja ativo e o de slots inativo
         ShowMainPanel();
 
-        // Regra do enunciado: "Continuar" só aparece se o Slot 0 (Autosave) tiver dados
+        // Regra: "Continuar" só aparece se o Slot 0 (Autosave) tiver dados salvos
         CheckAutoSaveSlot();
 
         // Associa os cliques dos botões aos seus respectivos métodos
@@ -66,11 +66,19 @@ public class MainMenuUI : MonoBehaviour
         }
     }
 
-    // Botão Novo Jogo: Inicia uma partida limpa sempre do início da primeira fase
+    // Botão Novo Jogo: Inicia uma partida limpa, reseta o Slot 0 para a Fase 1 e salva
     private void OnClick_NewGame()
     {
-        // Reseta os dados para o novo jogo
-        SaveSystem.Instance.SetPlayerLevel(1, 0);
+        if (SaveSystem.Instance != null)
+        {
+            // Define o progresso inicial para o nível 1 no Slot 0
+            SaveSystem.Instance.SetPlayerLevel(1, 0);
+
+            // Grava o arquivo do Slot 0 para atualizar o autosave antigo
+            SaveSystem.Instance.SaveDataInFile(0);
+        }
+
+        // Carrega a primeira fase de gameplay
         GameManager.Instance.LoadGameScene("Gameplay");
     }
 
@@ -79,7 +87,7 @@ public class MainMenuUI : MonoBehaviour
     {
         if (SaveSystem.Instance.LoadDataInFile(slotIndex))
         {
-            // Réplica o save carregado no Slot 0 (Regra do enunciado)
+            // Réplica o save carregado no Slot 0 (Autosave)
             SaveSystem.Instance.SaveDataInFile(0);
             LoadSavedPhase(slotIndex);
         }
