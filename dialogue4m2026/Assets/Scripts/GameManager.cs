@@ -1,10 +1,9 @@
-using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
-    public static GameManager Instance;
+    public static GameManager Instance { get; private set; }
 
     private void Awake()
     {
@@ -21,12 +20,36 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        LoadGameScene();
+        LoadMenuScene();
     }
 
-    public void LoadGameScene()
+    // Carrega a cena do Menu Inicial
+    public void LoadMenuScene()
     {
-        SceneManager.LoadScene("Gameplay");
+        SceneManager.LoadScene("Menu");
+    }
+
+    // Carrega uma fase de Gameplay especificada e adiciona a GUI/HUD por cima
+    public void LoadGameScene(string sceneName = "Gameplay")
+    {
+        SceneManager.LoadScene(sceneName);
         SceneManager.LoadScene("GUI", LoadSceneMode.Additive);
+    }
+
+    // Método utilitário para carregar por índice do Build Settings, se preferir
+    public void LoadGameScene(int sceneIndex)
+    {
+        SceneManager.LoadScene(sceneIndex);
+        SceneManager.LoadScene("GUI", LoadSceneMode.Additive);
+    }
+
+    // Fecha a aplicação
+    public void QuitGame()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
     }
 }
