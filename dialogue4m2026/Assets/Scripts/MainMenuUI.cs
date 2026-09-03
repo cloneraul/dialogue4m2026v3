@@ -30,13 +30,9 @@ public class MainMenuUI : MonoBehaviour
     {
         if (continueButton != null)
         {
-            // 1. Verifica se o SaveSystem possui arquivo gravado para o Slot 0
             bool hasSaveFile = (SaveSystem.Instance != null) && SaveSystem.Instance.LoadDataInFile(0);
-
-            // 2. Verifica se existe uma posição/checkpoint real gravada
             bool hasPositionSaved = PlayerPrefs.GetInt("Slot0_HasCheckpoint", 0) == 1;
 
-            // O botão "Continuar" só fica ativo se AMBAS as condições forem verdadeiras
             bool canContinue = hasSaveFile && hasPositionSaved;
             continueButton.gameObject.SetActive(canContinue);
         }
@@ -44,22 +40,17 @@ public class MainMenuUI : MonoBehaviour
 
     private void SetupButtonListeners()
     {
-        // Menu Principal
         if (continueButton != null) continueButton.onClick.AddListener(OnClick_Continue);
         if (newGameButton != null) newGameButton.onClick.AddListener(OnClick_NewGame);
         if (loadGameButton != null) loadGameButton.onClick.AddListener(ShowSlotsPanel);
         if (quitButton != null) quitButton.onClick.AddListener(OnClick_Quit);
 
-        // Tela de Slots
         if (slot1Button != null) slot1Button.onClick.AddListener(() => OnClick_SelectSlot(1));
         if (slot2Button != null) slot2Button.onClick.AddListener(() => OnClick_SelectSlot(2));
         if (slot3Button != null) slot3Button.onClick.AddListener(() => OnClick_SelectSlot(3));
         if (backButton != null) backButton.onClick.AddListener(ShowMainPanel);
     }
 
-    // --- AÇÕES DOS BOTÕES ---
-
-    // Botão Continuar: Carrega os dados do Slot 0 (Autosave)
     private void OnClick_Continue()
     {
         if (SaveSystem.Instance != null && SaveSystem.Instance.LoadDataInFile(0))
@@ -68,14 +59,10 @@ public class MainMenuUI : MonoBehaviour
         }
     }
 
-    // Botão Novo Jogo: Limpa a posição antiga e inicia um jogo limpo
     private void OnClick_NewGame()
     {
-        PlayerPrefs.DeleteKey("Slot0_HasCheckpoint");
-        PlayerPrefs.DeleteKey("Slot0_PosX");
-        PlayerPrefs.DeleteKey("Slot0_PosY");
-        PlayerPrefs.DeleteKey("Slot0_PosZ");
-        PlayerPrefs.Save();
+        ClearSlotPosition(0);
+        ClearSlotPosition(1);
 
         if (SaveSystem.Instance != null)
         {
@@ -89,14 +76,19 @@ public class MainMenuUI : MonoBehaviour
         }
     }
 
-    // Seleção de Slot (1, 2 ou 3) na tela de Carregar Jogo
     private void OnClick_SelectSlot(int slotIndex)
     {
-        if (SaveSystem.Instance != null && SaveSystem.Instance.LoadDataInFile(slotIndex))
+        // Confere se o Slot selecionado tem checkpoint registrado
+        if (PlayerPrefs.GetInt($"Slot{slotIndex}_HasCheckpoint", 0) == 1)
         {
-            int level = SaveSystem.Instance.GetPlayerLevel(slotIndex);
-            SaveSystem.Instance.SetPlayerLevel(level, 0);
-            SaveSystem.Instance.SaveDataInFile(0);
+            // Copia a posição salva do Slot selecionado para o Slot 0
+            CopyPositionFromSlotToSlot(slotIndex, 0);
+
+            if (SaveSystem.Instance != null)
+            {
+                SaveSystem.Instance.SetPlayerLevel(1, 0);
+                SaveSystem.Instance.SaveDataInFile(0);
+            }
 
             LoadSavedPhase(0);
         }
@@ -106,10 +98,31 @@ public class MainMenuUI : MonoBehaviour
         }
     }
 
-    // Carrega a cena correspondente ao nível registrado
+    private void CopyPositionFromSlotToSlot(int fromSlot, int toSlot)
+    {
+        float x = PlayerPrefs.GetFloat($"Slot{fromSlot}_PosX");
+        float y = PlayerPrefs.GetFloat($"Slot{fromSlot}_PosY");
+        float z = PlayerPrefs.GetFloat($"Slot{fromSlot}_PosZ");
+
+        PlayerPrefs.SetFloat($"Slot{toSlot}_PosX", x);
+        PlayerPrefs.SetFloat($"Slot{toSlot}_PosY", y);
+        PlayerPrefs.SetFloat($"Slot{toSlot}_PosZ", z);
+        PlayerPrefs.SetInt($"Slot{toSlot}_HasCheckpoint", 1);
+        PlayerPrefs.Save();
+    }
+
+    private void ClearSlotPosition(int slotIndex)
+    {
+        PlayerPrefs.DeleteKey($"Slot{slotIndex}_HasCheckpoint");
+        PlayerPrefs.DeleteKey($"Slot{slotIndex}_PosX");
+        PlayerPrefs.DeleteKey($"Slot{slotIndex}_PosY");
+        PlayerPrefs.DeleteKey($"Slot{slotIndex}_PosZ");
+        PlayerPrefs.Save();
+    }
+
     private void LoadSavedPhase(int slotIndex)
     {
-        int phaseLevel = SaveSystem.Instance.GetPlayerLevel(slotIndex);
+        int phaseLevel = (SaveSystem.Instance != null) ? SaveSystem.Instance.GetPlayerLevel(0) : 1;
         string targetScene = (phaseLevel == 2) ? "Gameplay 2" : "Gameplay";
 
         if (GameManager.Instance != null)
@@ -125,8 +138,6 @@ public class MainMenuUI : MonoBehaviour
             GameManager.Instance.QuitGame();
         }
     }
-
-    // --- NAVEGAÇÃO DE PAINÉIS ---
 
     public void ShowMainPanel()
     {
