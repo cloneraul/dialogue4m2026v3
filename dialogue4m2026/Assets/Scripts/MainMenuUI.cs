@@ -21,23 +21,24 @@ public class MainMenuUI : MonoBehaviour
 
     private void Start()
     {
-        // Exibe o painel principal
         ShowMainPanel();
-
-        // Regra: "Continuar" só aparece se o Slot 0 (Autosave) tiver arquivo salvo
         CheckAutoSaveSlot();
-
-        // Associa os cliques dos botões aos métodos
         SetupButtonListeners();
     }
 
     private void CheckAutoSaveSlot()
     {
-        if (SaveSystem.Instance != null && continueButton != null)
+        if (continueButton != null)
         {
-            // Tenta carregar o arquivo do Slot 0 (Autosave)
-            bool hasAutoSave = SaveSystem.Instance.LoadDataInFile(0);
-            continueButton.gameObject.SetActive(hasAutoSave);
+            // 1. Verifica se o SaveSystem possui arquivo gravado para o Slot 0
+            bool hasSaveFile = (SaveSystem.Instance != null) && SaveSystem.Instance.LoadDataInFile(0);
+
+            // 2. Verifica se existe uma posição/checkpoint real gravada
+            bool hasPositionSaved = PlayerPrefs.GetInt("Slot0_HasCheckpoint", 0) == 1;
+
+            // O botão "Continuar" só fica ativo se AMBAS as condições forem verdadeiras
+            bool canContinue = hasSaveFile && hasPositionSaved;
+            continueButton.gameObject.SetActive(canContinue);
         }
     }
 
@@ -58,18 +59,24 @@ public class MainMenuUI : MonoBehaviour
 
     // --- AÇÕES DOS BOTÕES ---
 
-    // Botão Continuar: Carrega o Slot 0
+    // Botão Continuar: Carrega os dados do Slot 0 (Autosave)
     private void OnClick_Continue()
     {
-        if (SaveSystem.Instance.LoadDataInFile(0))
+        if (SaveSystem.Instance != null && SaveSystem.Instance.LoadDataInFile(0))
         {
             LoadSavedPhase(0);
         }
     }
 
-    // Botão Novo Jogo: Cria progresso limpo no Slot 0 e carrega a fase 1
+    // Botão Novo Jogo: Limpa a posição antiga e inicia um jogo limpo
     private void OnClick_NewGame()
     {
+        PlayerPrefs.DeleteKey("Slot0_HasCheckpoint");
+        PlayerPrefs.DeleteKey("Slot0_PosX");
+        PlayerPrefs.DeleteKey("Slot0_PosY");
+        PlayerPrefs.DeleteKey("Slot0_PosZ");
+        PlayerPrefs.Save();
+
         if (SaveSystem.Instance != null)
         {
             SaveSystem.Instance.SetPlayerLevel(1, 0);
@@ -85,9 +92,8 @@ public class MainMenuUI : MonoBehaviour
     // Seleção de Slot (1, 2 ou 3) na tela de Carregar Jogo
     private void OnClick_SelectSlot(int slotIndex)
     {
-        if (SaveSystem.Instance.LoadDataInFile(slotIndex))
+        if (SaveSystem.Instance != null && SaveSystem.Instance.LoadDataInFile(slotIndex))
         {
-            // Copia o nível do slot escolhido para o Slot 0 (Autosave ativo)
             int level = SaveSystem.Instance.GetPlayerLevel(slotIndex);
             SaveSystem.Instance.SetPlayerLevel(level, 0);
             SaveSystem.Instance.SaveDataInFile(0);
@@ -100,7 +106,7 @@ public class MainMenuUI : MonoBehaviour
         }
     }
 
-    // Carrega a cena baseada no playerLevel salvo no SaveSystem
+    // Carrega a cena correspondente ao nível registrado
     private void LoadSavedPhase(int slotIndex)
     {
         int phaseLevel = SaveSystem.Instance.GetPlayerLevel(slotIndex);

@@ -2,29 +2,36 @@ using UnityEngine;
 
 public class CheckpointTrigger : MonoBehaviour
 {
-    [Header("Identificador do Checkpoint")]
-    [SerializeField] private string checkpointID;
+    [Header("Configurações do Checkpoint")]
+    [Tooltip("Identificador opcional para acompanhamento no Console")]
+    [SerializeField] private string checkpointID = "Checkpoint_01";
 
-    private bool activated = false;
+    private bool isActivated = false;
 
     private void OnTriggerEnter(Collider other)
     {
-        // Verifica se quem passou pelo trigger foi o Jogador
-        if (other.CompareTag("Player") && !activated)
+        // Garante que apenas o Jogador ative o Checkpoint
+        if (other.CompareTag("Player") && !isActivated)
         {
-            activated = true;
+            isActivated = true;
 
-            // Salva a posição exata do jogador e grava no Slot 0 (Autosave)
-            SaveData data = new SaveData();
-            data.SetPlayerPosition(other.transform.position);
-            data.currentSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            Vector3 playerPos = other.transform.position;
 
-            // Salva o JSON no Slot 0
-            string json = JsonUtility.ToJson(data);
-            PlayerPrefs.SetString("SaveSlot_0", json);
+            // 1. Salva a posição exata (X, Y, Z) no Slot 0 (Autosave)
+            PlayerPrefs.SetFloat("Slot0_PosX", playerPos.x);
+            PlayerPrefs.SetFloat("Slot0_PosY", playerPos.y);
+            PlayerPrefs.SetFloat("Slot0_PosZ", playerPos.z);
+            PlayerPrefs.SetInt("Slot0_HasCheckpoint", 1);
             PlayerPrefs.Save();
 
-            Debug.Log($"Checkpoint [Slot 0] salvo na posição: {other.transform.position}");
+            // 2. Registra o nível e grava o arquivo criptografado do Slot 0 no SaveSystem original
+            if (SaveSystem.Instance != null)
+            {
+                SaveSystem.Instance.SetPlayerLevel(1, 0);
+                SaveSystem.Instance.SaveDataInFile(0);
+            }
+
+            Debug.Log($"[Autosave] Checkpoint '{checkpointID}' ativado com sucesso! Posição salva: {playerPos}");
         }
     }
 }

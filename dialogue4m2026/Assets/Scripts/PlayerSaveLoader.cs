@@ -4,23 +4,40 @@ public class PlayerSaveLoader : MonoBehaviour
 {
     private void Start()
     {
-        // Verifica se existe algum save no Slot 0 (Autosave)
-        string json = PlayerPrefs.GetString("SaveSlot_0", "");
+        LoadAndApplySavePosition();
+    }
 
-        if (!string.IsNullOrEmpty(json))
+    public void LoadAndApplySavePosition()
+    {
+        // Verifica se existe um checkpoint gravado para o Slot 0
+        if (PlayerPrefs.GetInt("Slot0_HasCheckpoint", 0) == 1)
         {
-            SaveData data = JsonUtility.FromJson<SaveData>(json);
+            float x = PlayerPrefs.GetFloat("Slot0_PosX");
+            float y = PlayerPrefs.GetFloat("Slot0_PosY");
+            float z = PlayerPrefs.GetFloat("Slot0_PosZ");
 
-            // Desativa o CharacterController/Rigidbody temporariamente para mover sem conflito de física
-            CharacterController cc = GetComponent<CharacterController>();
-            if (cc != null) cc.enabled = false;
+            Vector3 savedPosition = new Vector3(x, y, z);
 
-            // Move o jogador para a posição gravada no Checkpoint
-            transform.position = data.GetPlayerPosition();
+            // Desativa o CharacterController temporariamente para aplicar o transporte sem conflito de física
+            CharacterController characterController = GetComponent<CharacterController>();
+            if (characterController != null)
+            {
+                characterController.enabled = false;
+            }
 
-            if (cc != null) cc.enabled = true;
+            // Reposiciona o jogador
+            transform.position = savedPosition;
 
-            Debug.Log($"Jogador posicionado no Checkpoint: {transform.position}");
+            if (characterController != null)
+            {
+                characterController.enabled = true;
+            }
+
+            Debug.Log($"[Autosave] Jogador reposicionado para a posição do Checkpoint: {savedPosition}");
+        }
+        else
+        {
+            Debug.Log("[Autosave] Nenhum checkpoint salvo encontrado no Slot 0. Mantendo a posição inicial da cena.");
         }
     }
 }
