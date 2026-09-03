@@ -521,6 +521,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Coin
   value: 1
+  coinID: 
 --- !u!54 &182287913
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -949,6 +950,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Coin
   value: 1
+  coinID: 
 --- !u!54 &279679148
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1230,6 +1232,132 @@ MonoBehaviour:
       m_PostInfinity: 2
       m_RotationOrder: 4
   CustomBlends: {fileID: 0}
+--- !u!1 &340830512
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 340830517}
+  - component: {fileID: 340830516}
+  - component: {fileID: 340830515}
+  - component: {fileID: 340830514}
+  - component: {fileID: 340830513}
+  m_Layer: 0
+  m_Name: Checkpoint_1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &340830513
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 340830512}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88bb69180f602c8409dffed8b734fa86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CheckpointTrigger
+  checkpointID: CP_Fase1_Inicio
+--- !u!65 &340830514
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 340830512}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!23 &340830515
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 340830512}
+  m_Enabled: 0
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &340830516
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 340830512}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!4 &340830517
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 340830512}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.1956, y: 2.6302, z: 11}
+  m_LocalScale: {x: 21.515982, y: 4.4484, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &348690678
 GameObject:
   m_ObjectHideFlags: 0
@@ -1963,6 +2091,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Coin
   value: 1
+  coinID: 
 --- !u!54 &470702463
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -2452,6 +2581,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Coin
   value: 1
+  coinID: 
 --- !u!54 &535502748
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -2606,6 +2736,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Coin
   value: 1
+  coinID: 
 --- !u!54 &552674746
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -2992,6 +3123,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Coin
   value: 1
+  coinID: 
 --- !u!54 &677398473
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3146,6 +3278,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Coin
   value: 1
+  coinID: 
 --- !u!54 &679850832
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3300,6 +3433,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Coin
   value: 1
+  coinID: 
 --- !u!54 &710909868
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3707,6 +3841,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Coin
   value: 1
+  coinID: 
 --- !u!1 &780116916
 GameObject:
   m_ObjectHideFlags: 0
@@ -4148,6 +4283,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Coin
   value: 1
+  coinID: 
 --- !u!54 &819692160
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -4621,6 +4757,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Coin
   value: 1
+  coinID: 
 --- !u!54 &948965574
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -4775,6 +4912,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Coin
   value: 1
+  coinID: 
 --- !u!54 &954733757
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -5220,6 +5358,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Coin
   value: 1
+  coinID: 
 --- !u!54 &1074693119
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -5789,6 +5928,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Coin
   value: 1
+  coinID: 
 --- !u!54 &1180696540
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -6010,6 +6150,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Coin
   value: 1
+  coinID: 
 --- !u!54 &1185865561
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -6679,6 +6820,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Coin
   value: 1
+  coinID: 
 --- !u!54 &1376506680
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -6833,6 +6975,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Coin
   value: 1
+  coinID: 
 --- !u!54 &1433605547
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -7659,6 +7802,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Coin
   value: 1
+  coinID: 
 --- !u!54 &1817875521
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -7906,6 +8050,7 @@ GameObject:
   - component: {fileID: 1847052703}
   - component: {fileID: 1847052702}
   - component: {fileID: 1847052704}
+  - component: {fileID: 1847052705}
   m_Layer: 0
   m_Name: Bola
   m_TagString: Player
@@ -8079,6 +8224,18 @@ MonoBehaviour:
   m_DefaultActionMap: Gameplay
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
+--- !u!114 &1847052705
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1847052697}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28df54bc1773def4c9f9d8fd41444ee1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerSaveLoader
 --- !u!1 &1853283691
 GameObject:
   m_ObjectHideFlags: 0
@@ -8337,6 +8494,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Coin
   value: 1
+  coinID: 
 --- !u!54 &1992016931
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -8857,3 +9015,4 @@ SceneRoots:
   - {fileID: 1122610811}
   - {fileID: 1218748282}
   - {fileID: 2115869225}
+  - {fileID: 340830517}

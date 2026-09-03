@@ -21,13 +21,13 @@ public class MainMenuUI : MonoBehaviour
 
     private void Start()
     {
-        // Garante que o painel principal esteja ativo e o de slots inativo
+        // Exibe o painel principal
         ShowMainPanel();
 
-        // Regra: "Continuar" só aparece se o Slot 0 (Autosave) tiver dados salvos
+        // Regra: "Continuar" só aparece se o Slot 0 (Autosave) tiver arquivo salvo
         CheckAutoSaveSlot();
 
-        // Associa os cliques dos botões aos seus respectivos métodos
+        // Associa os cliques dos botões aos métodos
         SetupButtonListeners();
     }
 
@@ -35,6 +35,7 @@ public class MainMenuUI : MonoBehaviour
     {
         if (SaveSystem.Instance != null && continueButton != null)
         {
+            // Tenta carregar o arquivo do Slot 0 (Autosave)
             bool hasAutoSave = SaveSystem.Instance.LoadDataInFile(0);
             continueButton.gameObject.SetActive(hasAutoSave);
         }
@@ -57,7 +58,7 @@ public class MainMenuUI : MonoBehaviour
 
     // --- AÇÕES DOS BOTÕES ---
 
-    // Botão Continuar: Carrega o Slot 0 (Autosave)
+    // Botão Continuar: Carrega o Slot 0
     private void OnClick_Continue()
     {
         if (SaveSystem.Instance.LoadDataInFile(0))
@@ -66,20 +67,19 @@ public class MainMenuUI : MonoBehaviour
         }
     }
 
-    // Botão Novo Jogo: Inicia uma partida limpa, reseta o Slot 0 para a Fase 1 e salva
+    // Botão Novo Jogo: Cria progresso limpo no Slot 0 e carrega a fase 1
     private void OnClick_NewGame()
     {
         if (SaveSystem.Instance != null)
         {
-            // Define o progresso inicial para o nível 1 no Slot 0
             SaveSystem.Instance.SetPlayerLevel(1, 0);
-
-            // Grava o arquivo do Slot 0 para atualizar o autosave antigo
             SaveSystem.Instance.SaveDataInFile(0);
         }
 
-        // Carrega a primeira fase de gameplay
-        GameManager.Instance.LoadGameScene("Gameplay");
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.LoadGameScene("Gameplay");
+        }
     }
 
     // Seleção de Slot (1, 2 ou 3) na tela de Carregar Jogo
@@ -87,9 +87,12 @@ public class MainMenuUI : MonoBehaviour
     {
         if (SaveSystem.Instance.LoadDataInFile(slotIndex))
         {
-            // Réplica o save carregado no Slot 0 (Autosave)
+            // Copia o nível do slot escolhido para o Slot 0 (Autosave ativo)
+            int level = SaveSystem.Instance.GetPlayerLevel(slotIndex);
+            SaveSystem.Instance.SetPlayerLevel(level, 0);
             SaveSystem.Instance.SaveDataInFile(0);
-            LoadSavedPhase(slotIndex);
+
+            LoadSavedPhase(0);
         }
         else
         {
@@ -97,18 +100,24 @@ public class MainMenuUI : MonoBehaviour
         }
     }
 
-    // Auxiliar para carregar a cena com base na fase gravada no save
+    // Carrega a cena baseada no playerLevel salvo no SaveSystem
     private void LoadSavedPhase(int slotIndex)
     {
         int phaseLevel = SaveSystem.Instance.GetPlayerLevel(slotIndex);
         string targetScene = (phaseLevel == 2) ? "Gameplay 2" : "Gameplay";
 
-        GameManager.Instance.LoadGameScene(targetScene);
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.LoadGameScene(targetScene);
+        }
     }
 
     private void OnClick_Quit()
     {
-        GameManager.Instance.QuitGame();
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.QuitGame();
+        }
     }
 
     // --- NAVEGAÇÃO DE PAINÉIS ---
