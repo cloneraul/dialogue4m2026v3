@@ -23,10 +23,7 @@ public class SaveTotemInteractable1 : MonoBehaviour
             isPlayerInside = true;
             playerTransform = other.transform;
 
-            // 1. Envia a posição 3D do Totem para o botão "E" se posicionar na tela
             NotifyInteractPosition(transform.position + buttonOffset);
-
-            // 2. Notifica o sistema para mostrar o botão "E" (ativa visibilidade)
             NotifyInteractable(true);
         }
     }
@@ -38,14 +35,12 @@ public class SaveTotemInteractable1 : MonoBehaviour
             isPlayerInside = false;
             playerTransform = null;
 
-            // Oculta o botão "E" ao se afastar do Totem
             NotifyInteractable(false);
         }
     }
 
     private void Update()
     {
-        // Ao estar próximo e pressionar 'E', salva no Slot 2
         if (isPlayerInside && Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
         {
             ExecuteSave();
@@ -64,11 +59,18 @@ public class SaveTotemInteractable1 : MonoBehaviour
         {
             Vector3 playerPos = playerTransform.position;
 
-            // Grava a posição no Slot 2 e espelha no Slot 0 (sessão ativa)
+            // 1. Grava a posição no Slot 2 e espelha no Slot 0
             SavePositionForSlot(targetSlot, playerPos);
             SavePositionForSlot(0, playerPos);
 
-            // Grava os dados de progresso no SaveSystem
+            // 2. Grava as moedas no Slot 2 e espelha no Slot 0
+            if (CoinManager.Instance != null)
+            {
+                CoinManager.Instance.SaveCheckpointCoins(targetSlot);
+                CoinManager.Instance.SaveCheckpointCoins(0);
+            }
+
+            // 3. Grava o progresso no SaveSystem
             if (SaveSystem.Instance != null)
             {
                 int currentLevel = SaveSystem.Instance.GetPlayerLevel(0);
@@ -76,7 +78,7 @@ public class SaveTotemInteractable1 : MonoBehaviour
                 SaveSystem.Instance.SaveDataInFile(0);
             }
 
-            Debug.Log($"[Totem Save] Jogo salvo no Slot {targetSlot} com sucesso! Posição gravada: {playerPos}");
+            Debug.Log($"[Totem Save] Jogo e moedas salvos no Slot {targetSlot} e Slot 0 com sucesso!");
         }
     }
 
@@ -89,7 +91,7 @@ public class SaveTotemInteractable1 : MonoBehaviour
         PlayerPrefs.Save();
     }
 
-    // --- MÉTODOS AUXILIARES PARA INVOCAR EVENTOS DO INTERACTOM ---
+    // --- MÉTODOS AUXILIARES DO INTERACTOM ---
 
     private void NotifyInteractable(bool state)
     {

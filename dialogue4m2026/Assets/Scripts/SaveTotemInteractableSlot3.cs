@@ -1,4 +1,5 @@
 using System;
+using System;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -26,7 +27,6 @@ public class SaveTotemInteractableSlot3 : MonoBehaviour
             isPlayerInside = true;
             playerTransform = other.transform;
 
-            // Envia a posição e ativa o botão "E" flutuante
             NotifyInteractPosition(transform.position + buttonOffset);
             NotifyInteractable(true);
         }
@@ -39,14 +39,12 @@ public class SaveTotemInteractableSlot3 : MonoBehaviour
             isPlayerInside = false;
             playerTransform = null;
 
-            // Oculta o botão "E" ao se afastar
             NotifyInteractable(false);
         }
     }
 
     private void Update()
     {
-        // Se estiver perto do Totem e pressionar 'E', executa o save no Slot 3
         if (isPlayerInside && Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
         {
             ExecuteSave();
@@ -55,32 +53,55 @@ public class SaveTotemInteractableSlot3 : MonoBehaviour
 
     private void ExecuteSave()
     {
+        // Garante a referência do jogador caso o playerTransform esteja nulo
         if (playerTransform == null)
         {
             GameObject player = GameObject.FindWithTag("Player");
-            if (player != null) playerTransform = player.transform;
+            if (player != null)
+            {
+                playerTransform = player.transform;
+            }
         }
 
         if (playerTransform != null)
         {
             Vector3 playerPos = playerTransform.position;
 
-            // 1. Grava as coordenadas nos PlayerPrefs do Slot 3 e espelha no Slot 0 (sessão ativa)
+            // 1. Grava as coordenadas X, Y, Z no PlayerPrefs para o Slot Alvo e para o Slot 0
             SavePositionForSlot(targetSlot, playerPos);
             SavePositionForSlot(0, playerPos);
 
-            // 2. Grava o progresso do Nível 2 via SaveSystem no Slot 0
-            if (SaveSystem.Instance != null)
+            // 2. Grava as moedas no Slot Alvo e no Slot 0
+            if (CoinManager.Instance != null)
             {
-                SaveSystem.Instance.SetPlayerLevel(currentLevel, 0);
-                SaveSystem.Instance.SaveDataInFile(0);
+                CoinManager.Instance.SaveCheckpointCoins(targetSlot);
+                CoinManager.Instance.SaveCheckpointCoins(0);
             }
 
-            Debug.Log($"[Totem Gameplay 2] Jogo salvo com SUCESSO no Slot {targetSlot} (Fase {currentLevel}) na posição: {playerPos}");
+            // 3. Grava o nível no PlayerPrefs diretamente (Garantia de backup)
+            PlayerPrefs.SetInt($"Slot{targetSlot}_Level", currentLevel);
+            PlayerPrefs.SetInt("Slot0_Level", currentLevel);
+
+            // 4. Tenta salvar no SaveSystem de forma segura sem travar o jogo
+            if (SaveSystem.Instance != null)
+            {
+                try
+                {
+                    // Tenta atualizar no Slot 0 (Sessão Ativa)
+                    SaveSystem.Instance.SetPlayerLevel(currentLevel, 0);
+                    SaveSystem.Instance.SaveDataInFile(0);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[SaveSystem] Não foi possível salvar no SaveSystem interno, mas o PlayerPrefs gravou com sucesso. Detalhe: {e.Message}");
+                }
+            }
+
+            Debug.Log($"[Totem Gameplay 2] Jogo e moedas salvos com SUCESSO no Slot {targetSlot}! Posição: {playerPos} | Fase: {currentLevel}");
         }
         else
         {
-            Debug.LogWarning("[Totem Gameplay 2] Não foi possível encontrar a referência do Jogador!");
+            Debug.LogError("[Totem Gameplay 2] ERRO CRÍTICO: Objeto com a Tag 'Player' não foi encontrado na cena!");
         }
     }
 
@@ -93,7 +114,7 @@ public class SaveTotemInteractableSlot3 : MonoBehaviour
         PlayerPrefs.Save();
     }
 
-    // --- MÉTODOS DE INTEGRAÇÃO COM O INTERACTOM ---
+    // --- MÉTODOS AUXILIARES DO INTERACTOM ---
 
     private void NotifyInteractable(bool state)
     {

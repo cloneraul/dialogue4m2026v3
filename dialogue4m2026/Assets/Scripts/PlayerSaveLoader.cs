@@ -40,7 +40,13 @@ public class PlayerSaveLoader : MonoBehaviour
             if (rb != null) rb.isKinematic = false;
             if (cc != null) cc.enabled = true;
 
-            Debug.Log($"[SaveLoader] Jogador reposicionado com sucesso para: {savedPosition}");
+            // RESTAURA AS MOEDAS DO CHECKPOINT NO COINMANAGER
+            if (CoinManager.Instance != null)
+            {
+                CoinManager.Instance.LoadCheckpointCoins(0);
+            }
+
+            Debug.Log($"[SaveLoader] Jogador reposicionado com sucesso para: {savedPosition} e moedas restauradas.");
         }
         else
         {

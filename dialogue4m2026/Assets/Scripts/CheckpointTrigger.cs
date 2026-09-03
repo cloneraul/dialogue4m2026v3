@@ -19,14 +19,21 @@ public class CheckpointTrigger : MonoBehaviour
             SavePositionForSlot(0, playerPos);
             SavePositionForSlot(1, playerPos);
 
-            // 2. Chama o SaveSystem APENAS para o Slot 0 (evita o erro de índice fora de alcance)
+            // 2. Salva o estado atual das moedas nos Slots 0 e 1
+            if (CoinManager.Instance != null)
+            {
+                CoinManager.Instance.SaveCheckpointCoins(0);
+                CoinManager.Instance.SaveCheckpointCoins(1);
+            }
+
+            // 3. Chama o SaveSystem APENAS para o Slot 0
             if (SaveSystem.Instance != null)
             {
                 SaveSystem.Instance.SetPlayerLevel(1, 0);
                 SaveSystem.Instance.SaveDataInFile(0);
             }
 
-            Debug.Log($"[Save Complete] Checkpoint '{checkpointID}' gravou a posição {playerPos} nos Slots 0 e 1!");
+            Debug.Log($"[Save Complete] Checkpoint '{checkpointID}' gravou posição e moedas nos Slots 0 e 1!");
         }
     }
 

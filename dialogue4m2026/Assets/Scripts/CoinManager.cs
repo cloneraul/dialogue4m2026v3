@@ -5,8 +5,10 @@ public class CoinManager : MonoBehaviour
 {
     public static CoinManager Instance { get; private set; }
 
-    private int currentCoins = 0;
+    private int currentCoins = 0; // Moedas coletadas na corrida atual
+    private int checkpointCoins = 0; // Moedas confirmadas no último checkpoint
     private HashSet<string> collectedCoinIDs = new HashSet<string>();
+    private HashSet<string> checkpointCoinIDs = new HashSet<string>();
 
     public int CurrentCoins => currentCoins;
 
@@ -19,66 +21,86 @@ public class CoinManager : MonoBehaviour
         }
 
         Instance = this;
+    }
 
-        // Carrega o progresso das moedas ao iniciar a cena
-        LoadCoinData();
+    private void Start()
+    {
+        // Carrega as moedas salvas no Slot 0 ao iniciar
+        LoadCheckpointCoins(0);
     }
 
     public void CollectCoin(Coin coin)
     {
-        if (coin == null)
-            return;
+        if (coin == null) return;
 
         currentCoins += coin.Value;
 
-        // Adiciona o ID na lista de coletadas
         if (!string.IsNullOrEmpty(coin.CoinID))
         {
             collectedCoinIDs.Add(coin.CoinID);
         }
 
-        Debug.Log("Moeda coletada! Total: " + currentCoins);
-
-        // Salva o progresso atualizado no Slot 0 (Autosave)
-        SaveCoinData();
+        Debug.Log($"[Moeda] Coletada: {coin.CoinID} | Total Atual: {currentCoins}");
     }
 
     public bool IsCoinCollected(string coinID)
     {
         if (string.IsNullOrEmpty(coinID)) return false;
-        return collectedCoinIDs.Contains(coinID);
+        // Confere se a moeda já foi confirmada no checkpoint carregado
+        return checkpointCoinIDs.Contains(coinID);
     }
 
-    public void ResetCoins()
+    /// <summary>
+    /// Salva o estado atual das moedas no Slot especificado quando o jogador toca em um Checkpoint ou Totem.
+    /// </summary>
+    public void SaveCheckpointCoins(int slotIndex)
+    {
+        checkpointCoins = currentCoins;
+        checkpointCoinIDs = new HashSet<string>(collectedCoinIDs);
+
+        PlayerPrefs.SetInt($"Slot{slotIndex}_Coins", checkpointCoins);
+
+        // Converte o HashSet de IDs em string separada por vírgula
+        string idsFormatted = string.Join(",", checkpointCoinIDs);
+        PlayerPrefs.SetString($"Slot{slotIndex}_CoinIDs", idsFormatted);
+        PlayerPrefs.Save();
+
+        Debug.Log($"[CoinManager] Moedas salvas no Slot {slotIndex}! Total: {checkpointCoins}");
+    }
+
+    /// <summary>
+    /// Carrega as moedas registradas no Slot especificado.
+    /// </summary>
+    public void LoadCheckpointCoins(int slotIndex)
+    {
+        checkpointCoins = PlayerPrefs.GetInt($"Slot{slotIndex}_Coins", 0);
+        currentCoins = checkpointCoins;
+
+        string idsFormatted = PlayerPrefs.GetString($"Slot{slotIndex}_CoinIDs", "");
+        if (!string.IsNullOrEmpty(idsFormatted))
+        {
+            string[] ids = idsFormatted.Split(',');
+            checkpointCoinIDs = new HashSet<string>(ids);
+            collectedCoinIDs = new HashSet<string>(ids);
+        }
+        else
+        {
+            checkpointCoinIDs.Clear();
+            collectedCoinIDs.Clear();
+        }
+
+        Debug.Log($"[CoinManager] Moedas carregadas do Slot {slotIndex}: {currentCoins}");
+    }
+
+    /// <summary>
+    /// Zera o contador de moedas ao iniciar uma nova fase.
+    /// </summary>
+    public void ResetCoinsForNewLevel()
     {
         currentCoins = 0;
+        checkpointCoins = 0;
         collectedCoinIDs.Clear();
-        Debug.Log("Moedas resetadas.");
-    }
-
-    // --- MÉTODOS DE SAVE E LOAD DAS MOEDAS ---
-
-    private void SaveCoinData()
-    {
-        string json = PlayerPrefs.GetString("SaveSlot_0", "");
-        SaveData data = string.IsNullOrEmpty(json) ? new SaveData() : JsonUtility.FromJson<SaveData>(json);
-
-        data.totalCoins = currentCoins;
-        data.collectedCoinIDs = new List<string>(collectedCoinIDs);
-
-        string updatedJson = JsonUtility.ToJson(data);
-        PlayerPrefs.SetString("SaveSlot_0", updatedJson);
-        PlayerPrefs.Save();
-    }
-
-    private void LoadCoinData()
-    {
-        string json = PlayerPrefs.GetString("SaveSlot_0", "");
-        if (!string.IsNullOrEmpty(json))
-        {
-            SaveData data = JsonUtility.FromJson<SaveData>(json);
-            currentCoins = data.totalCoins;
-            collectedCoinIDs = new HashSet<string>(data.collectedCoinIDs);
-        }
+        checkpointCoinIDs.Clear();
+        Debug.Log("[CoinManager] Contador de moedas resetado para nova fase.");
     }
 }

@@ -16,7 +16,7 @@ public class Coin : MonoBehaviour
 
     private void Start()
     {
-        // Se a moeda já tiver sido salva como coletada no CoinManager, esconde ela
+        // Se a moeda já tiver sido salva como coletada no Checkpoint, desativa ela do cenário
         if (CoinManager.Instance != null && CoinManager.Instance.IsCoinCollected(coinID))
         {
             gameObject.SetActive(false);
@@ -25,15 +25,15 @@ public class Coin : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (collected)
-            return;
-
-        if (!other.CompareTag("Player"))
+        if (collected || !other.CompareTag("Player"))
             return;
 
         collected = true;
 
-        CoinManager.Instance.CollectCoin(this);
+        if (CoinManager.Instance != null)
+        {
+            CoinManager.Instance.CollectCoin(this);
+        }
 
         gameObject.SetActive(false);
     }
