@@ -1,15 +1,20 @@
+using System.Collections;
 using UnityEngine;
 
 public class PlayerSaveLoader : MonoBehaviour
 {
     private void Start()
     {
-        LoadAndApplySavePosition();
+        // Aguarda a cena e o motor de física inicializarem antes de mover
+        StartCoroutine(ApplySavedPositionNextFrame());
     }
 
-    public void LoadAndApplySavePosition()
+    private IEnumerator ApplySavedPositionNextFrame()
     {
-        // Verifica se existe um checkpoint gravado para o Slot 0
+        // Espera o final do frame atual da Unity para garantir prioridade de execução
+        yield return new WaitForEndOfFrame();
+
+        // Checa se há posição de checkpoint registrada para o Slot 0
         if (PlayerPrefs.GetInt("Slot0_HasCheckpoint", 0) == 1)
         {
             float x = PlayerPrefs.GetFloat("Slot0_PosX");
@@ -18,26 +23,28 @@ public class PlayerSaveLoader : MonoBehaviour
 
             Vector3 savedPosition = new Vector3(x, y, z);
 
-            // Desativa o CharacterController temporariamente para aplicar o transporte sem conflito de física
-            CharacterController characterController = GetComponent<CharacterController>();
-            if (characterController != null)
-            {
-                characterController.enabled = false;
-            }
+            // Desativa os componentes de física temporariamente para o teletransporte
+            CharacterController cc = GetComponent<CharacterController>();
+            Rigidbody rb = GetComponent<Rigidbody>();
 
-            // Reposiciona o jogador
+            if (cc != null) cc.enabled = false;
+            if (rb != null) rb.isKinematic = true;
+
+            // Aplica a posição salva
             transform.position = savedPosition;
 
-            if (characterController != null)
-            {
-                characterController.enabled = true;
-            }
+            // Garante 1 frame de espera com o colisor desativado
+            yield return null;
 
-            Debug.Log($"[Autosave] Jogador reposicionado para a posição do Checkpoint: {savedPosition}");
+            // Reativa a física e colisão
+            if (rb != null) rb.isKinematic = false;
+            if (cc != null) cc.enabled = true;
+
+            Debug.Log($"[SaveLoader] Jogador reposicionado com sucesso para: {savedPosition}");
         }
         else
         {
-            Debug.Log("[Autosave] Nenhum checkpoint salvo encontrado no Slot 0. Mantendo a posição inicial da cena.");
+            Debug.Log("[SaveLoader] Nenhum checkpoint salvo. Mantendo spawn padrão.");
         }
     }
 }
