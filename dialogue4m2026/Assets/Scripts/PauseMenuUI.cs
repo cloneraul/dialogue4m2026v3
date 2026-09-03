@@ -1,16 +1,13 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.InputSystem;
+using UnityEngine.InputSystem; // Compatível com o New Input System
 
 public class PauseMenuUI : MonoBehaviour
 {
-    [Header("Painéis")]
+    [Header("Painel de Pausa")]
     [SerializeField] private GameObject pausePanel;
 
-    [Header("Botão do HUD (Na Tela)")]
-    [SerializeField] private Button pauseHUDButton;
-
-    [Header("Botões do Painel de Pausa")]
+    [Header("Botões do Painel")]
     [SerializeField] private Button resumeButton;
     [SerializeField] private Button backToMenuButton;
 
@@ -18,31 +15,15 @@ public class PauseMenuUI : MonoBehaviour
 
     private void Start()
     {
+        // Garante que o painel comece escondido e o tempo normal
         if (pausePanel != null)
         {
             pausePanel.SetActive(false);
         }
 
-        SetupButtons();
-    }
+        Time.timeScale = 1f;
 
-    private void Update()
-    {
-        if (Keyboard.current != null)
-        {
-            if (Keyboard.current.escapeKey.wasPressedThisFrame || Keyboard.current.pKey.wasPressedThisFrame)
-            {
-                if (isPaused) ResumeGame();
-                else PauseGame();
-            }
-        }
-    }
-
-    private void SetupButtons()
-    {
-        if (pauseHUDButton != null)
-            pauseHUDButton.onClick.AddListener(PauseGame);
-
+        // Configura os botões de dentro do painel
         if (resumeButton != null)
             resumeButton.onClick.AddListener(ResumeGame);
 
@@ -50,31 +31,46 @@ public class PauseMenuUI : MonoBehaviour
             backToMenuButton.onClick.AddListener(OnClick_BackToMenu);
     }
 
-    // --- MÉTODOS PÚBLICOS (APARECEM NO ON CLICK DO INSPECTOR) ---
+    private void Update()
+    {
+        // Detecta o clique na tecla ESC ou P via New Input System
+        if (Keyboard.current != null)
+        {
+            if (Keyboard.current.escapeKey.wasPressedThisFrame || Keyboard.current.pKey.wasPressedThisFrame)
+            {
+                if (isPaused)
+                {
+                    ResumeGame();
+                }
+                else
+                {
+                    PauseGame();
+                }
+            }
+        }
+    }
 
     public void PauseGame()
     {
         isPaused = true;
-
         if (pausePanel != null) pausePanel.SetActive(true);
-        if (pauseHUDButton != null) pauseHUDButton.gameObject.SetActive(false);
-
-        Time.timeScale = 0f;
+        Time.timeScale = 0f; // Congela o jogo
     }
 
     public void ResumeGame()
     {
         isPaused = false;
-
         if (pausePanel != null) pausePanel.SetActive(false);
-        if (pauseHUDButton != null) pauseHUDButton.gameObject.SetActive(true);
-
-        Time.timeScale = 1f;
+        Time.timeScale = 1f; // Volta o jogo ao normal
     }
 
     public void OnClick_BackToMenu()
     {
-        Time.timeScale = 1f;
-        GameManager.Instance.LoadMenuScene();
+        Time.timeScale = 1f; // OBRIGATÓRIO: Descongela o tempo antes de trocar de cena
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.LoadMenuScene();
+        }
     }
 }
