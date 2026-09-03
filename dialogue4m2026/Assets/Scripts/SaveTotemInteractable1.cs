@@ -3,7 +3,7 @@ using System.Reflection;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class SaveTotemInteractable : MonoBehaviour
+public class SaveTotemInteractable1 : MonoBehaviour
 {
     [Header("Configurações do Save")]
     [Tooltip("Slot de destino para o salvamento manual (Slot 2)")]
