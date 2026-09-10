@@ -5,12 +5,15 @@ using UnityEngine.InputSystem;
 
 public class SceneTransitionInteractable : MonoBehaviour
 {
-    [Header("Configurações de Cena")]
+    [Header("Configurações de Transição")]
     [Tooltip("Nome exato da cena de destino no Build Settings")]
     [SerializeField] private string targetSceneName = "Gameplay 2";
 
+    [Tooltip("Número da próxima fase (Fase 2)")]
+    [SerializeField] private int nextLevelNumber = 2;
+
     [Header("Posição do Botão 'E'")]
-    [Tooltip("Deslocamento de altura para o botão 'E' flutuar em cima da porta")]
+    [Tooltip("Deslocamento de altura para o botão 'E' flutuar em cima do objeto")]
     [SerializeField] private Vector3 buttonOffset = new Vector3(0, 2f, 0);
 
     private bool isPlayerInside = false;
@@ -40,28 +43,49 @@ public class SceneTransitionInteractable : MonoBehaviour
 
     private void Update()
     {
-        // Se estiver perto da porta e pressionar 'E', troca de cena
+        // Se estiver perto do objeto e pressionar 'E', avança para a Fase 2
         if (isPlayerInside && Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
         {
-            ChangeScene();
+            ExecuteTransitionToLevel2();
         }
     }
 
-    private void ChangeScene()
+    private void ExecuteTransitionToLevel2()
     {
-        // Oculta o botão de interação antes de mudar de cena
+        // Oculta o botão de interação antes de carregar a cena
         NotifyInteractable(false);
 
-        Debug.Log($"[Porta] Interação ativada! Transicionando para a cena: {targetSceneName}");
+        Debug.Log($"[Transição] Interação ativada na Fase 1! Carregando: {targetSceneName}");
 
-        // Atualiza o nível do jogador no SaveSystem para salvar que ele avançou de fase (Fase 2)
-        if (SaveSystem.Instance != null)
+        // 1. Reseta moedas no CoinManager no momento exato da troca de fase
+        if (CoinManager.Instance != null)
         {
-            SaveSystem.Instance.SetPlayerLevel(2, 0);
-            SaveSystem.Instance.SaveDataInFile(0);
+            CoinManager.Instance.ResetCoinsForNewLevel();
         }
 
-        // Carrega a nova cena usando o GameManager
+        // 2. Limpa dados do checkpoint da Fase 1 do Slot 0 para o jogador iniciar no início da Fase 2
+        PlayerPrefs.DeleteKey("Slot0_HasCheckpoint");
+        PlayerPrefs.DeleteKey("Slot0_PosX");
+        PlayerPrefs.DeleteKey("Slot0_PosY");
+        PlayerPrefs.DeleteKey("Slot0_PosZ");
+        PlayerPrefs.SetInt("Slot0_Level", nextLevelNumber);
+        PlayerPrefs.Save();
+
+        // 3. Atualiza o progresso para Nível 2 no SaveSystem
+        if (SaveSystem.Instance != null)
+        {
+            try
+            {
+                SaveSystem.Instance.SetPlayerLevel(nextLevelNumber, 0);
+                SaveSystem.Instance.SaveDataInFile(0);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[SceneTransition] Erro ao salvar no SaveSystem: {e.Message}");
+            }
+        }
+
+        // 4. Carrega a cena Gameplay 2
         if (GameManager.Instance != null)
         {
             GameManager.Instance.LoadGameScene(targetSceneName);

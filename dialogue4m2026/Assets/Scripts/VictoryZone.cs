@@ -3,10 +3,6 @@ using UnityEngine;
 
 public class VictoryZone : MonoBehaviour
 {
-    [Header("Configurações da Fase")]
-    [Tooltip("Marque se esta for a última fase do jogo (Gameplay 2)")]
-    [SerializeField] private bool isFinalLevel;
-
     [Header("UI de Vitória")]
     [SerializeField] private GameObject victoryPanel;
     [SerializeField] private TMPro.TextMeshProUGUI victoryCoinsText;
@@ -23,7 +19,7 @@ public class VictoryZone : MonoBehaviour
     {
         if (victoryPanel != null) victoryPanel.SetActive(false);
 
-        // Busca todas as moedas da cena sem warnings de API obsoleta
+        // Busca todas as moedas ativas na cena
         totalCoinsInScene = FindObjectsByType<Coin>(FindObjectsInactive.Exclude).Length;
     }
 
@@ -41,7 +37,7 @@ public class VictoryZone : MonoBehaviour
         // 1. Coleta moedas atuais do CoinManager
         int currentCoins = (CoinManager.Instance != null) ? CoinManager.Instance.CurrentCoins : 0;
 
-        // 2. Exibe a interface com a nova instrução
+        // 2. Exibe a interface com a instrução para o objeto verde
         if (victoryPanel != null) victoryPanel.SetActive(true);
         
         if (victoryCoinsText != null)
@@ -51,29 +47,20 @@ public class VictoryZone : MonoBehaviour
         
         if (instructionText != null)
         {
-            instructionText.text = isFinalLevel 
-                ? "Parabéns! Você concluiu o jogo!" 
-                : "Pressione E no objeto verde para avançar para a fase 2";
+            instructionText.text = "Pressione E no objeto verde para prosseguir";
         }
 
-        // 3. Salva o progresso e autosave no Slot 0
+        // 3. Salva o Autosave no Slot 0 para manter o estado da vitória
         SaveAutosaveOnVictory();
 
-        // 4. RESETA AS MOEDAS para a nova fase
-        if (!isFinalLevel && CoinManager.Instance != null)
-        {
-            CoinManager.Instance.ResetCoinsForNewLevel();
-        }
-
-        // 5. Inicia o temporizador para fechar o painel automaticamente após 5 segundos
+        // 4. Inicia o temporizador para fechar o painel após 5 segundos
         StartCoroutine(HidePanelAfterDelay());
 
-        Debug.Log($"[VictoryZone] Vitória registrada! Moedas: {currentCoins}/{totalCoinsInScene}. Autosave e Reset de moedas efetuados.");
+        Debug.Log($"[VictoryZone] Vitória registrada! Moedas: {currentCoins}/{totalCoinsInScene}. Autosave efetuado.");
     }
 
     private IEnumerator HidePanelAfterDelay()
     {
-        // Aguarda os 5 segundos com o jogo rodando normalmente
         yield return new WaitForSeconds(displayDuration);
 
         if (victoryPanel != null)
@@ -84,14 +71,11 @@ public class VictoryZone : MonoBehaviour
 
     private void SaveAutosaveOnVictory()
     {
-        int levelToSave = isFinalLevel ? 2 : 1;
-
         if (SaveSystem.Instance != null)
         {
             try
             {
-                SaveSystem.Instance.SetPlayerLevel(levelToSave);
-                SaveSystem.Instance.SaveDataInFile();
+                SaveSystem.Instance.SaveDataInFile(0);
             }
             catch (System.Exception e)
             {
@@ -99,7 +83,6 @@ public class VictoryZone : MonoBehaviour
             }
         }
 
-        PlayerPrefs.SetInt("Slot0_Level", levelToSave);
         PlayerPrefs.Save();
     }
 }
