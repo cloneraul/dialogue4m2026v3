@@ -5,6 +5,10 @@ public class CheckpointTrigger : MonoBehaviour
     [Header("Configurações do Checkpoint")]
     [SerializeField] private string checkpointID = "Checkpoint_01";
 
+    [Header("Ajuste de Spawn")]
+    [Tooltip("Elevação leve para o jogador não nascer preso no chão do checkpoint")]
+    [SerializeField] private Vector3 spawnOffset = new Vector3(0, 0.5f, 0);
+
     private bool isActivated = false;
 
     private void OnTriggerEnter(Collider other)
@@ -13,11 +17,12 @@ public class CheckpointTrigger : MonoBehaviour
         {
             isActivated = true;
 
-            Vector3 playerPos = other.transform.position;
+            // Pega a posição do CENTRO do próprio objeto de Checkpoint em vez da borda onde a bola tocou
+            Vector3 centerPos = transform.position + spawnOffset;
 
-            // 1. Salva a posição nos PlayerPrefs para o Slot 0 e Slot 1
-            SavePositionForSlot(0, playerPos);
-            SavePositionForSlot(1, playerPos);
+            // 1. Salva a posição central nos PlayerPrefs para o Slot 0 e Slot 1
+            SavePositionForSlot(0, centerPos);
+            SavePositionForSlot(1, centerPos);
 
             // 2. Salva o estado atual das moedas nos Slots 0 e 1
             if (CoinManager.Instance != null)
@@ -33,7 +38,7 @@ public class CheckpointTrigger : MonoBehaviour
                 SaveSystem.Instance.SaveDataInFile(0);
             }
 
-            Debug.Log($"[Save Complete] Checkpoint '{checkpointID}' gravou posição e moedas nos Slots 0 e 1!");
+            Debug.Log($"[Save Complete] Checkpoint '{checkpointID}' gravou posição CENTRAL {centerPos} e moedas nos Slots 0 e 1!");
         }
     }
 

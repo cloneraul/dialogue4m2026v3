@@ -9,20 +9,20 @@ public class SaveTotemInteractable1 : MonoBehaviour
     [Tooltip("Slot de destino para o salvamento manual (Slot 2)")]
     [SerializeField] private int targetSlot = 2;
 
-    [Header("Posição do Botão 'E'")]
+    [Header("Posição do Botão 'E' e Spawn")]
     [Tooltip("Deslocamento de altura para o botão 'E' flutuar em cima do Totem")]
     [SerializeField] private Vector3 buttonOffset = new Vector3(0, 1.5f, 0);
 
+    [Tooltip("Elevação leve para o jogador nascer no centro do totem sem prender no chão")]
+    [SerializeField] private Vector3 spawnOffset = new Vector3(0, 0.5f, 0);
+
     private bool isPlayerInside = false;
-    private Transform playerTransform;
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
         {
             isPlayerInside = true;
-            playerTransform = other.transform;
-
             NotifyInteractPosition(transform.position + buttonOffset);
             NotifyInteractable(true);
         }
@@ -33,8 +33,6 @@ public class SaveTotemInteractable1 : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             isPlayerInside = false;
-            playerTransform = null;
-
             NotifyInteractable(false);
         }
     }
@@ -49,37 +47,36 @@ public class SaveTotemInteractable1 : MonoBehaviour
 
     private void ExecuteSave()
     {
-        if (playerTransform == null)
+        // Pega a posição central do próprio Totem
+        Vector3 centerPos = transform.position + spawnOffset;
+
+        // 1. Grava a posição no Slot Alvo e espelha no Slot 0
+        SavePositionForSlot(targetSlot, centerPos);
+        SavePositionForSlot(0, centerPos);
+
+        // 2. Grava as moedas no Slot Alvo e espelha no Slot 0
+        if (CoinManager.Instance != null)
         {
-            GameObject player = GameObject.FindWithTag("Player");
-            if (player != null) playerTransform = player.transform;
+            CoinManager.Instance.SaveCheckpointCoins(targetSlot);
+            CoinManager.Instance.SaveCheckpointCoins(0);
         }
 
-        if (playerTransform != null)
+        // 3. Grava o progresso no SaveSystem
+        if (SaveSystem.Instance != null)
         {
-            Vector3 playerPos = playerTransform.position;
-
-            // 1. Grava a posição no Slot 2 e espelha no Slot 0
-            SavePositionForSlot(targetSlot, playerPos);
-            SavePositionForSlot(0, playerPos);
-
-            // 2. Grava as moedas no Slot 2 e espelha no Slot 0
-            if (CoinManager.Instance != null)
-            {
-                CoinManager.Instance.SaveCheckpointCoins(targetSlot);
-                CoinManager.Instance.SaveCheckpointCoins(0);
-            }
-
-            // 3. Grava o progresso no SaveSystem
-            if (SaveSystem.Instance != null)
+            try
             {
                 int currentLevel = SaveSystem.Instance.GetPlayerLevel(0);
                 SaveSystem.Instance.SetPlayerLevel(currentLevel, 0);
                 SaveSystem.Instance.SaveDataInFile(0);
             }
-
-            Debug.Log($"[Totem Save] Jogo e moedas salvos no Slot {targetSlot} e Slot 0 com sucesso!");
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[SaveSystem] Gravação interna ignorada: {e.Message}");
+            }
         }
+
+        Debug.Log($"[Totem Save] Jogo e moedas salvos no Slot {targetSlot} e Slot 0! Posição CENTRAL: {centerPos}");
     }
 
     private void SavePositionForSlot(int slotIndex, Vector3 pos)
