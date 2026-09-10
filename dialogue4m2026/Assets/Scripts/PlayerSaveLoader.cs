@@ -5,16 +5,17 @@ public class PlayerSaveLoader : MonoBehaviour
 {
     private void Start()
     {
-        // Aguarda a cena e o motor de física inicializarem antes de mover
-        StartCoroutine(ApplySavedPositionNextFrame());
+        // Inicia o processo de verificação e reposicionamento
+        StartCoroutine(ApplySavedPositionRoutine());
     }
 
-    private IEnumerator ApplySavedPositionNextFrame()
+    private IEnumerator ApplySavedPositionRoutine()
     {
-        // Espera o final do frame atual da Unity para garantir prioridade de execução
+        // 1. Aguarda 2 frames para garantir que a Unity carregou todos os GameObjects da Fase 2
+        yield return null;
         yield return new WaitForEndOfFrame();
 
-        // Checa se há posição de checkpoint registrada para o Slot 0
+        // 2. Checa se existe checkpoint registrado no Slot 0
         if (PlayerPrefs.GetInt("Slot0_HasCheckpoint", 0) == 1)
         {
             float x = PlayerPrefs.GetFloat("Slot0_PosX");
@@ -23,34 +24,41 @@ public class PlayerSaveLoader : MonoBehaviour
 
             Vector3 savedPosition = new Vector3(x, y, z);
 
-            // Desativa os componentes de física temporariamente para o teletransporte
             CharacterController cc = GetComponent<CharacterController>();
             Rigidbody rb = GetComponent<Rigidbody>();
 
+            // 3. DESATIVA OS COMPONENTES DE FÍSICA E MOVIMENTO
             if (cc != null) cc.enabled = false;
-            if (rb != null) rb.isKinematic = true;
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+                rb.linearVelocity = Vector3.zero; // Zeramos qualquer inércia/velocidade
+            }
 
-            // Aplica a posição salva
+            // 4. APLICA A POSIÇÃO DIRETAMENTE
             transform.position = savedPosition;
 
-            // Garante 1 frame de espera com o colisor desativado
+            // Espera mais 1 frame com o colisor desativado para a Unity assentar a física
             yield return null;
 
-            // Reativa a física e colisão
+            // Garante a posição novamente para evitar sobrescrita de scripts de Spawn
+            transform.position = savedPosition;
+
+            // 5. REATIVA A FÍSICA
             if (rb != null) rb.isKinematic = false;
             if (cc != null) cc.enabled = true;
 
-            // RESTAURA AS MOEDAS DO CHECKPOINT NO COINMANAGER
+            // 6. CARREGA AS MOEDAS DO SLOT 0
             if (CoinManager.Instance != null)
             {
                 CoinManager.Instance.LoadCheckpointCoins(0);
             }
 
-            Debug.Log($"[SaveLoader] Jogador reposicionado com sucesso para: {savedPosition} e moedas restauradas.");
+            Debug.Log($"[PlayerSaveLoader] Teletransporte concluído com SUCESSO! Posição carregada: {savedPosition}");
         }
         else
         {
-            Debug.Log("[SaveLoader] Nenhum checkpoint salvo. Mantendo spawn padrão.");
+            Debug.Log("[PlayerSaveLoader] Nenhum checkpoint ativo no Slot 0. Mantendo posição de spawn padrão da cena.");
         }
     }
 }

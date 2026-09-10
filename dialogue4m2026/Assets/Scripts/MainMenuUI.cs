@@ -33,7 +33,7 @@ public class MainMenuUI : MonoBehaviour
             bool hasSaveFile = (SaveSystem.Instance != null) && SaveSystem.Instance.LoadDataInFile(0);
             bool hasPositionSaved = PlayerPrefs.GetInt("Slot0_HasCheckpoint", 0) == 1;
 
-            bool canContinue = hasSaveFile && hasPositionSaved;
+            bool canContinue = hasSaveFile || hasPositionSaved;
             continueButton.gameObject.SetActive(canContinue);
         }
     }
@@ -53,16 +53,19 @@ public class MainMenuUI : MonoBehaviour
 
     private void OnClick_Continue()
     {
-        if (SaveSystem.Instance != null && SaveSystem.Instance.LoadDataInFile(0))
-        {
-            LoadSavedPhase(0);
-        }
+        // Ao clicar em Continuar, carrega o Slot 0 de autosave
+        LoadSavedPhaseForSlot(0);
     }
 
     private void OnClick_NewGame()
     {
         ClearSlotPosition(0);
         ClearSlotPosition(1);
+
+        // Limpa moedas salvas do autosave para o novo jogo
+        PlayerPrefs.DeleteKey("Slot0_Coins");
+        PlayerPrefs.DeleteKey("Slot0_CoinIDs");
+        PlayerPrefs.Save();
 
         if (SaveSystem.Instance != null)
         {
@@ -81,16 +84,11 @@ public class MainMenuUI : MonoBehaviour
         // Confere se o Slot selecionado tem checkpoint registrado
         if (PlayerPrefs.GetInt($"Slot{slotIndex}_HasCheckpoint", 0) == 1)
         {
-            // Copia a posição salva do Slot selecionado para o Slot 0
-            CopyPositionFromSlotToSlot(slotIndex, 0);
+            // 1. Copia a posição e as moedas salvas do Slot selecionado para o Slot 0
+            CopyDataFromSlotToSlot(slotIndex, 0);
 
-            if (SaveSystem.Instance != null)
-            {
-                SaveSystem.Instance.SetPlayerLevel(1, 0);
-                SaveSystem.Instance.SaveDataInFile(0);
-            }
-
-            LoadSavedPhase(0);
+            // 2. Carregamento baseado no Slot escolhido
+            LoadSavedPhaseForSlot(slotIndex);
         }
         else
         {
@@ -98,8 +96,9 @@ public class MainMenuUI : MonoBehaviour
         }
     }
 
-    private void CopyPositionFromSlotToSlot(int fromSlot, int toSlot)
+    private void CopyDataFromSlotToSlot(int fromSlot, int toSlot)
     {
+        // Copia Posição X, Y, Z
         float x = PlayerPrefs.GetFloat($"Slot{fromSlot}_PosX");
         float y = PlayerPrefs.GetFloat($"Slot{fromSlot}_PosY");
         float z = PlayerPrefs.GetFloat($"Slot{fromSlot}_PosZ");
@@ -108,6 +107,14 @@ public class MainMenuUI : MonoBehaviour
         PlayerPrefs.SetFloat($"Slot{toSlot}_PosY", y);
         PlayerPrefs.SetFloat($"Slot{toSlot}_PosZ", z);
         PlayerPrefs.SetInt($"Slot{toSlot}_HasCheckpoint", 1);
+
+        // Copia Dados de Moedas
+        int coins = PlayerPrefs.GetInt($"Slot{fromSlot}_Coins", 0);
+        string coinIDs = PlayerPrefs.GetString($"Slot{fromSlot}_CoinIDs", "");
+
+        PlayerPrefs.SetInt($"Slot{toSlot}_Coins", coins);
+        PlayerPrefs.SetString($"Slot{toSlot}_CoinIDs", coinIDs);
+
         PlayerPrefs.Save();
     }
 
@@ -120,14 +127,31 @@ public class MainMenuUI : MonoBehaviour
         PlayerPrefs.Save();
     }
 
-    private void LoadSavedPhase(int slotIndex)
+    private void LoadSavedPhaseForSlot(int slotIndex)
     {
-        int phaseLevel = (SaveSystem.Instance != null) ? SaveSystem.Instance.GetPlayerLevel(0) : 1;
-        string targetScene = (phaseLevel == 2) ? "Gameplay 2" : "Gameplay";
+        // REGRA DIRETA: Slot 3 carrega obrigatoriamente "Gameplay 2".
+        // Slots 0, 1 e 2 carregam "Gameplay" (ou verificação do SaveSystem para Slot 0).
+        string targetScene = "Gameplay";
+
+        if (slotIndex == 3)
+        {
+            targetScene = "Gameplay 2";
+        }
+        else if (slotIndex == 0)
+        {
+            int phaseLevel = (SaveSystem.Instance != null) ? SaveSystem.Instance.GetPlayerLevel(0) : 1;
+            targetScene = (phaseLevel == 2) ? "Gameplay 2" : "Gameplay";
+        }
+
+        Debug.Log($"[MainMenuUI] Carregando Slot {slotIndex} -> Cena: {targetScene}");
 
         if (GameManager.Instance != null)
         {
             GameManager.Instance.LoadGameScene(targetScene);
+        }
+        else
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene(targetScene);
         }
     }
 
@@ -136,6 +160,10 @@ public class MainMenuUI : MonoBehaviour
         if (GameManager.Instance != null)
         {
             GameManager.Instance.QuitGame();
+        }
+        else
+        {
+            Application.Quit();
         }
     }
 

@@ -155,7 +155,7 @@ MonoBehaviour:
     playerName: 
   - playerLevel: 1
     playerName: 
-  - playerLevel: 1
+  - playerLevel: 2
     playerName: 
 --- !u!4 &1304458686
 Transform:
