@@ -9,6 +9,9 @@ public class SaveTotemInteractable1 : MonoBehaviour
     [Tooltip("Slot de destino para o salvamento manual (Slot 2)")]
     [SerializeField] private int targetSlot = 2;
 
+    [Tooltip("Nível da fase atual (1 para Gameplay / Fase 1)")]
+    [SerializeField] private int currentLevel = 1;
+
     [Header("Posição do Botão 'E' e Spawn")]
     [Tooltip("Deslocamento de altura para o botão 'E' flutuar em cima do Totem")]
     [SerializeField] private Vector3 buttonOffset = new Vector3(0, 1.5f, 0);
@@ -50,7 +53,7 @@ public class SaveTotemInteractable1 : MonoBehaviour
         // Pega a posição central do próprio Totem
         Vector3 centerPos = transform.position + spawnOffset;
 
-        // 1. Grava a posição no Slot Alvo e espelha no Slot 0
+        // 1. Grava a posição no Slot Alvo (Slot 2) e espelha no Slot 0
         SavePositionForSlot(targetSlot, centerPos);
         SavePositionForSlot(0, centerPos);
 
@@ -61,12 +64,15 @@ public class SaveTotemInteractable1 : MonoBehaviour
             CoinManager.Instance.SaveCheckpointCoins(0);
         }
 
-        // 3. Grava o progresso no SaveSystem
+        // 3. CORREÇÃO CRÍTICA: Grava explicitamente que a fase é a Fase 1 (Gameplay) nos PlayerPrefs
+        PlayerPrefs.SetInt($"Slot{targetSlot}_Level", currentLevel);
+        PlayerPrefs.SetInt("Slot0_Level", currentLevel);
+
+        // 4. Grava o progresso no SaveSystem
         if (SaveSystem.Instance != null)
         {
             try
             {
-                int currentLevel = SaveSystem.Instance.GetPlayerLevel(0);
                 SaveSystem.Instance.SetPlayerLevel(currentLevel, 0);
                 SaveSystem.Instance.SaveDataInFile(0);
             }
@@ -76,7 +82,9 @@ public class SaveTotemInteractable1 : MonoBehaviour
             }
         }
 
-        Debug.Log($"[Totem Save] Jogo e moedas salvos no Slot {targetSlot} e Slot 0! Posição CENTRAL: {centerPos}");
+        PlayerPrefs.Save();
+
+        Debug.Log($"[Totem Save Slot 2] Fase {currentLevel} e Posição CENTRAL {centerPos} salvas com SUCESSO no Slot {targetSlot} e Slot 0!");
     }
 
     private void SavePositionForSlot(int slotIndex, Vector3 pos)
