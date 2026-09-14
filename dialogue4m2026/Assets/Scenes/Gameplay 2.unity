@@ -1450,7 +1450,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -44.18213, y: -2.9156952}
+  m_AnchoredPosition: {x: -44.18213, y: -2.9157104}
   m_SizeDelta: {x: -444.3967, y: -180.1377}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &363657121
@@ -2006,7 +2006,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 688a0efa94e605f4cb354468a623a384, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VictoryZone
-  isFinalLevel: 0
   victoryPanel: {fileID: 363657119}
   victoryCoinsText: {fileID: 154800653}
   instructionText: {fileID: 1236052453}
@@ -3892,8 +3891,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 198389ed3f7f0a7428918adff1c25726, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseToMenu
-  menuSceneName: Menu
-  guiSceneName: GUI
 --- !u!4 &851798786
 Transform:
   m_ObjectHideFlags: 0
@@ -6571,7 +6568,7 @@ Transform:
   m_GameObject: {fileID: 1332525891}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -10.73, y: 1.11, z: 61.58}
+  m_LocalPosition: {x: -27.13, y: 1.11, z: 67.72}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
