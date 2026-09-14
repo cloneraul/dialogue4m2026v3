@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class MainMenuUI : MonoBehaviour
 {
@@ -8,9 +9,8 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] private GameObject slotsPanel;
 
     [Header("Botões do Menu Principal")]
-    [SerializeField] private Button continueButton;
+    [SerializeField] private Button playButton; // Botão "Jogar" ou "Carregar Jogo"
     [SerializeField] private Button newGameButton;
-    [SerializeField] private Button loadGameButton;
     [SerializeField] private Button quitButton;
 
     [Header("Botões dos Slots")]
@@ -19,139 +19,109 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] private Button slot3Button;
     [SerializeField] private Button backButton;
 
+    // Controla se o painel foi aberto para Iniciar Novo Jogo ou Carregar Slot
+    private bool isNewGameSelection = false;
+
     private void Start()
     {
+        Time.timeScale = 1f;
         ShowMainPanel();
-        CheckAutoSaveSlot();
         SetupButtonListeners();
-    }
-
-    private void CheckAutoSaveSlot()
-    {
-        if (continueButton != null)
-        {
-            bool hasSaveFile = (SaveSystem.Instance != null) && SaveSystem.Instance.LoadDataInFile(0);
-            bool hasPositionSaved = PlayerPrefs.GetInt("Slot0_HasCheckpoint", 0) == 1;
-
-            bool canContinue = hasSaveFile || hasPositionSaved;
-            continueButton.gameObject.SetActive(canContinue);
-        }
     }
 
     private void SetupButtonListeners()
     {
-        if (continueButton != null) continueButton.onClick.AddListener(OnClick_Continue);
-        if (newGameButton != null) newGameButton.onClick.AddListener(OnClick_NewGame);
-        if (loadGameButton != null) loadGameButton.onClick.AddListener(ShowSlotsPanel);
+        if (playButton != null) playButton.onClick.AddListener(() => OpenSlotsPanel(false));
+        if (newGameButton != null) newGameButton.onClick.AddListener(() => OpenSlotsPanel(true));
         if (quitButton != null) quitButton.onClick.AddListener(OnClick_Quit);
 
-        if (slot1Button != null) slot1Button.onClick.AddListener(() => OnClick_SelectSlot(1));
-        if (slot2Button != null) slot2Button.onClick.AddListener(() => OnClick_SelectSlot(2));
-        if (slot3Button != null) slot3Button.onClick.AddListener(() => OnClick_SelectSlot(3));
+        if (slot1Button != null) slot1Button.onClick.AddListener(() => OnSelectSlot(1));
+        if (slot2Button != null) slot2Button.onClick.AddListener(() => OnSelectSlot(2));
+        if (slot3Button != null) slot3Button.onClick.AddListener(() => OnSelectSlot(3));
         if (backButton != null) backButton.onClick.AddListener(ShowMainPanel);
     }
 
-    private void OnClick_Continue()
+    private void OpenSlotsPanel(bool isNewGame)
     {
-        // Ao clicar em Continuar, carrega o Slot 0 de autosave
-        LoadSavedPhaseForSlot(0);
+        isNewGameSelection = isNewGame;
+        ShowSlotsPanel();
     }
 
-    private void OnClick_NewGame()
+    private void OnSelectSlot(int slotIndex)
     {
-        ClearSlotPosition(0);
-        ClearSlotPosition(1);
-
-        // Limpa moedas salvas do autosave para o novo jogo
-        PlayerPrefs.DeleteKey("Slot0_Coins");
-        PlayerPrefs.DeleteKey("Slot0_CoinIDs");
+        // 1. Grava o Slot selecionado como o Slot ativo da sessão atual
+        PlayerPrefs.SetInt("CurrentActiveSlot", slotIndex);
         PlayerPrefs.Save();
 
-        if (SaveSystem.Instance != null)
+        if (isNewGameSelection)
         {
-            SaveSystem.Instance.SetPlayerLevel(1, 0);
-            SaveSystem.Instance.SaveDataInFile(0);
-        }
-
-        if (GameManager.Instance != null)
-        {
-            GameManager.Instance.LoadGameScene("Gameplay");
-        }
-    }
-
-    private void OnClick_SelectSlot(int slotIndex)
-    {
-        // Confere se o Slot selecionado tem checkpoint registrado
-        if (PlayerPrefs.GetInt($"Slot{slotIndex}_HasCheckpoint", 0) == 1)
-        {
-            // 1. Copia a posição e as moedas salvas do Slot selecionado para o Slot 0
-            CopyDataFromSlotToSlot(slotIndex, 0);
-
-            // 2. Carregamento baseado no Slot escolhido
-            LoadSavedPhaseForSlot(slotIndex);
+            StartNewGameOnSlot(slotIndex);
         }
         else
         {
-            Debug.LogWarning($"O Slot {slotIndex} está vazio!");
+            LoadGameFromSlot(slotIndex);
         }
     }
 
-    private void CopyDataFromSlotToSlot(int fromSlot, int toSlot)
+    private void StartNewGameOnSlot(int slotIndex)
     {
-        // Copia Posição X, Y, Z
-        float x = PlayerPrefs.GetFloat($"Slot{fromSlot}_PosX");
-        float y = PlayerPrefs.GetFloat($"Slot{fromSlot}_PosY");
-        float z = PlayerPrefs.GetFloat($"Slot{fromSlot}_PosZ");
+        Debug.Log($"[MainMenuUI] Criando NOVO JOGO no Slot {slotIndex}...");
 
-        PlayerPrefs.SetFloat($"Slot{toSlot}_PosX", x);
-        PlayerPrefs.SetFloat($"Slot{toSlot}_PosY", y);
-        PlayerPrefs.SetFloat($"Slot{toSlot}_PosZ", z);
-        PlayerPrefs.SetInt($"Slot{toSlot}_HasCheckpoint", 1);
-
-        // Copia Dados de Moedas
-        int coins = PlayerPrefs.GetInt($"Slot{fromSlot}_Coins", 0);
-        string coinIDs = PlayerPrefs.GetString($"Slot{fromSlot}_CoinIDs", "");
-
-        PlayerPrefs.SetInt($"Slot{toSlot}_Coins", coins);
-        PlayerPrefs.SetString($"Slot{toSlot}_CoinIDs", coinIDs);
-
-        PlayerPrefs.Save();
-    }
-
-    private void ClearSlotPosition(int slotIndex)
-    {
+        // Limpa os dados exclusivamente desse slot
         PlayerPrefs.DeleteKey($"Slot{slotIndex}_HasCheckpoint");
         PlayerPrefs.DeleteKey($"Slot{slotIndex}_PosX");
         PlayerPrefs.DeleteKey($"Slot{slotIndex}_PosY");
         PlayerPrefs.DeleteKey($"Slot{slotIndex}_PosZ");
+        PlayerPrefs.DeleteKey($"Slot{slotIndex}_Coins");
+        PlayerPrefs.DeleteKey($"Slot{slotIndex}_CoinIDs");
+        PlayerPrefs.SetInt($"Slot{slotIndex}_Level", 1);
         PlayerPrefs.Save();
+
+        if (CoinManager.Instance != null)
+        {
+            CoinManager.Instance.ResetCoinsForNewLevel();
+        }
+
+        if (SaveSystem.Instance != null)
+        {
+            SaveSystem.Instance.SetPlayerLevel(1, slotIndex);
+            SaveSystem.Instance.SaveDataInFile(slotIndex);
+        }
+
+        // Novo jogo sempre inicia na Fase 1 ("Gameplay")
+        LoadScene("Gameplay");
     }
 
-    private void LoadSavedPhaseForSlot(int slotIndex)
+    private void LoadGameFromSlot(int slotIndex)
     {
-        // REGRA DIRETA: Slot 3 carrega obrigatoriamente "Gameplay 2".
-        // Slots 0, 1 e 2 carregam "Gameplay" (ou verificação do SaveSystem para Slot 0).
-        string targetScene = "Gameplay";
+        bool hasSave = PlayerPrefs.GetInt($"Slot{slotIndex}_HasCheckpoint", 0) == 1 || 
+                       PlayerPrefs.HasKey($"Slot{slotIndex}_Level");
 
-        if (slotIndex == 3)
+        if (!hasSave)
         {
-            targetScene = "Gameplay 2";
-        }
-        else if (slotIndex == 0)
-        {
-            int phaseLevel = (SaveSystem.Instance != null) ? SaveSystem.Instance.GetPlayerLevel(0) : 1;
-            targetScene = (phaseLevel == 2) ? "Gameplay 2" : "Gameplay";
+            Debug.LogWarning($"[MainMenuUI] Slot {slotIndex} está vazio! Criando novo jogo nele.");
+            StartNewGameOnSlot(slotIndex);
+            return;
         }
 
-        Debug.Log($"[MainMenuUI] Carregando Slot {slotIndex} -> Cena: {targetScene}");
+        // Lê a fase gravada especificamente nesse slot
+        int savedLevel = PlayerPrefs.GetInt($"Slot{slotIndex}_Level", 1);
+        string targetScene = (savedLevel == 2) ? "Gameplay 2" : "Gameplay";
 
+        Debug.Log($"[MainMenuUI] Entrando no Slot {slotIndex} -> Fase: {savedLevel} ({targetScene})");
+
+        LoadScene(targetScene);
+    }
+
+    private void LoadScene(string sceneName)
+    {
         if (GameManager.Instance != null)
         {
-            GameManager.Instance.LoadGameScene(targetScene);
+            GameManager.Instance.LoadGameScene(sceneName);
         }
         else
         {
-            UnityEngine.SceneManagement.SceneManager.LoadScene(targetScene);
+            SceneManager.LoadScene(sceneName);
         }
     }
 
