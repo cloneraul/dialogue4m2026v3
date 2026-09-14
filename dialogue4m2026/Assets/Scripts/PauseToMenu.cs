@@ -65,8 +65,9 @@ public class PauseController : MonoBehaviour
     public void PauseGame()
     {
         isPaused = true;
-        Time.timeScale = 0f; // Pausa o tempo do jogo
+        Time.timeScale = 0f; // Congela a física e o tempo
 
+        // Liberar o ponteiro do mouse para clicar na UI
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
@@ -76,8 +77,9 @@ public class PauseController : MonoBehaviour
     public void ResumeGame()
     {
         isPaused = false;
-        Time.timeScale = 1f; // Retoma o tempo do jogo
+        Time.timeScale = 1f; // Retoma o jogo
 
+        // Ocultar/travar o ponteiro do mouse novamente
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 
