@@ -9,8 +9,8 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] private GameObject slotsPanel;
 
     [Header("Botões do Menu Principal")]
-    [SerializeField] private Button playButton; // Botão "Jogar" ou "Carregar Jogo"
-    [SerializeField] private Button newGameButton;
+    [SerializeField] private Button playButton; // Botão "Carregar Jogo" (Abre os slots)
+    [SerializeField] private Button newGameButton; // Botão "Novo Jogo" (Inicia direto)
     [SerializeField] private Button quitButton;
 
     [Header("Botões dos Slots")]
@@ -18,9 +18,6 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] private Button slot2Button;
     [SerializeField] private Button slot3Button;
     [SerializeField] private Button backButton;
-
-    // Controla se o painel foi aberto para Iniciar Novo Jogo ou Carregar Slot
-    private bool isNewGameSelection = false;
 
     private void Start()
     {
@@ -31,50 +28,25 @@ public class MainMenuUI : MonoBehaviour
 
     private void SetupButtonListeners()
     {
-        if (playButton != null) playButton.onClick.AddListener(() => OpenSlotsPanel(false));
-        if (newGameButton != null) newGameButton.onClick.AddListener(() => OpenSlotsPanel(true));
+        if (playButton != null) playButton.onClick.AddListener(ShowSlotsPanel);
+        if (newGameButton != null) newGameButton.onClick.AddListener(OnClick_StartNewGameDirectly);
         if (quitButton != null) quitButton.onClick.AddListener(OnClick_Quit);
 
-        if (slot1Button != null) slot1Button.onClick.AddListener(() => OnSelectSlot(1));
-        if (slot2Button != null) slot2Button.onClick.AddListener(() => OnSelectSlot(2));
-        if (slot3Button != null) slot3Button.onClick.AddListener(() => OnSelectSlot(3));
+        if (slot1Button != null) slot1Button.onClick.AddListener(() => OnSelectSlotToLoad(1));
+        if (slot2Button != null) slot2Button.onClick.AddListener(() => OnSelectSlotToLoad(2));
+        if (slot3Button != null) slot3Button.onClick.AddListener(() => OnSelectSlotToLoad(3));
         if (backButton != null) backButton.onClick.AddListener(ShowMainPanel);
     }
 
-    private void OpenSlotsPanel(bool isNewGame)
+    /// <summary>
+    /// Inicia uma nova partida do zero na Fase 1 sem vincular a um slot ainda.
+    /// </summary>
+    private void OnClick_StartNewGameDirectly()
     {
-        isNewGameSelection = isNewGame;
-        ShowSlotsPanel();
-    }
+        Debug.Log("[MainMenuUI] Iniciando Novo Jogo diretamente na Fase 1...");
 
-    private void OnSelectSlot(int slotIndex)
-    {
-        // 1. Grava o Slot selecionado como o Slot ativo da sessão atual
-        PlayerPrefs.SetInt("CurrentActiveSlot", slotIndex);
-        PlayerPrefs.Save();
-
-        if (isNewGameSelection)
-        {
-            StartNewGameOnSlot(slotIndex);
-        }
-        else
-        {
-            LoadGameFromSlot(slotIndex);
-        }
-    }
-
-    private void StartNewGameOnSlot(int slotIndex)
-    {
-        Debug.Log($"[MainMenuUI] Criando NOVO JOGO no Slot {slotIndex}...");
-
-        // Limpa os dados exclusivamente desse slot
-        PlayerPrefs.DeleteKey($"Slot{slotIndex}_HasCheckpoint");
-        PlayerPrefs.DeleteKey($"Slot{slotIndex}_PosX");
-        PlayerPrefs.DeleteKey($"Slot{slotIndex}_PosY");
-        PlayerPrefs.DeleteKey($"Slot{slotIndex}_PosZ");
-        PlayerPrefs.DeleteKey($"Slot{slotIndex}_Coins");
-        PlayerPrefs.DeleteKey($"Slot{slotIndex}_CoinIDs");
-        PlayerPrefs.SetInt($"Slot{slotIndex}_Level", 1);
+        // Define o slot ativo como 0 (sessão temporária sem slot fixo definido)
+        PlayerPrefs.SetInt("CurrentActiveSlot", 0);
         PlayerPrefs.Save();
 
         if (CoinManager.Instance != null)
@@ -82,33 +54,32 @@ public class MainMenuUI : MonoBehaviour
             CoinManager.Instance.ResetCoinsForNewLevel();
         }
 
-        if (SaveSystem.Instance != null)
-        {
-            SaveSystem.Instance.SetPlayerLevel(1, slotIndex);
-            SaveSystem.Instance.SaveDataInFile(slotIndex);
-        }
-
-        // Novo jogo sempre inicia na Fase 1 ("Gameplay")
         LoadScene("Gameplay");
     }
 
-    private void LoadGameFromSlot(int slotIndex)
+    /// <summary>
+    /// Carrega o progresso de um dos slots selecionados no menu.
+    /// </summary>
+    private void OnSelectSlotToLoad(int slotIndex)
     {
         bool hasSave = PlayerPrefs.GetInt($"Slot{slotIndex}_HasCheckpoint", 0) == 1 || 
                        PlayerPrefs.HasKey($"Slot{slotIndex}_Level");
 
         if (!hasSave)
         {
-            Debug.LogWarning($"[MainMenuUI] Slot {slotIndex} está vazio! Criando novo jogo nele.");
-            StartNewGameOnSlot(slotIndex);
+            Debug.LogWarning($"[MainMenuUI] Slot {slotIndex} está vazio!");
             return;
         }
 
-        // Lê a fase gravada especificamente nesse slot
+        // Define este slot como o slot ativo para a sessão
+        PlayerPrefs.SetInt("CurrentActiveSlot", slotIndex);
+        PlayerPrefs.Save();
+
+        // Lê a fase gravada especificamente neste slot
         int savedLevel = PlayerPrefs.GetInt($"Slot{slotIndex}_Level", 1);
         string targetScene = (savedLevel == 2) ? "Gameplay 2" : "Gameplay";
 
-        Debug.Log($"[MainMenuUI] Entrando no Slot {slotIndex} -> Fase: {savedLevel} ({targetScene})");
+        Debug.Log($"[MainMenuUI] Carregando Slot {slotIndex} -> Fase: {savedLevel} ({targetScene})");
 
         LoadScene(targetScene);
     }
