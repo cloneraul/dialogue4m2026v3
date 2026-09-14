@@ -13,8 +13,8 @@ public class PauseToMenu : MonoBehaviour
 
     private void Update()
     {
-        // Pressionar a tecla ESC no New Input System
-        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+        // Alterado de escapeKey para pKey
+        if (Keyboard.current != null && Keyboard.current.pKey.wasPressedThisFrame)
         {
             ReturnToMainMenu();
         }
@@ -22,7 +22,7 @@ public class PauseToMenu : MonoBehaviour
 
     public void ReturnToMainMenu()
     {
-        Debug.Log("[Pause] Pressionou ESC. Descarregando UI e retornando ao Menu...");
+        Debug.Log("[Pause] Pressionou a tecla P. Descarregando UI e retornando ao Menu...");
 
         // 1. Libera o cursor do mouse para interagir com o menu
         Cursor.lockState = CursorLockMode.None;
