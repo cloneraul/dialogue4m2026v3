@@ -7719,12 +7719,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 1628935144}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a8d1759208784af489910a2ad11066ba, type: 3}
+  m_Script: {fileID: 11500000, guid: 88bb69180f602c8409dffed8b734fa86, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SaveTotemInteractableSlot3
-  targetSlot: 3
+  m_EditorClassIdentifier: Assembly-CSharp::SaveTrigger
+  saveType: 0
   currentLevel: 2
-  buttonOffset: {x: 0, y: 2, z: 0}
+  buttonOffset: {x: 0, y: 1.5, z: 0}
   spawnOffset: {x: 0, y: 0.5, z: 0}
 --- !u!1 &1837427948
 GameObject:
@@ -8151,6 +8151,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28df54bc1773def4c9f9d8fd41444ee1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerSaveLoader
+  delayBeforeApply: 0.1
 --- !u!1 &1894077549
 GameObject:
   m_ObjectHideFlags: 0
