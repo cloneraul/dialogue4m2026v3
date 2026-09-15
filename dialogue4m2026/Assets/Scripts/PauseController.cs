@@ -9,47 +9,25 @@ public class PauseController : MonoBehaviour
     [SerializeField] private GameObject pauseMenuPanel;
     [SerializeField] private GameObject saveSlotsPanel;
 
-    [Header("Botões do Menu de Pause")]
-    [SerializeField] private Button resumeButton;      // Continuar Jogando
-    [SerializeField] private Button saveButton;        // Abrir Painel de Saves
-    [SerializeField] private Button mainMenuButton;    // Voltar ao Menu Principal
-
-    [Header("Botões do Painel de Slots")]
-    [SerializeField] private Button slot1Button;
-    [SerializeField] private Button slot2Button;
-    [SerializeField] private Button slot3Button;
-    [SerializeField] private Button backToPauseButton;
-
     [Header("Configurações de Cena")]
     [SerializeField] private string menuSceneName = "Menu";
 
     private bool isPaused = false;
+    private bool inSaveSlots = false;
 
     private void Start()
     {
-        // Garante que o menu de pause inicie fechado
+        // Garante que a UI inicie fechada
         if (pauseMenuPanel != null) pauseMenuPanel.SetActive(false);
         if (saveSlotsPanel != null) saveSlotsPanel.SetActive(false);
-
-        SetupButtonListeners();
-    }
-
-    private void SetupButtonListeners()
-    {
-        if (resumeButton != null) resumeButton.onClick.AddListener(ResumeGame);
-        if (saveButton != null) saveButton.onClick.AddListener(OpenSaveSlots);
-        if (mainMenuButton != null) mainMenuButton.onClick.AddListener(ReturnToMainMenu);
-
-        if (slot1Button != null) slot1Button.onClick.AddListener(() => SaveGameToSlot(1));
-        if (slot2Button != null) slot2Button.onClick.AddListener(() => SaveGameToSlot(2));
-        if (slot3Button != null) slot3Button.onClick.AddListener(() => SaveGameToSlot(3));
-        if (backToPauseButton != null) backToPauseButton.onClick.AddListener(OpenPauseMenu);
     }
 
     private void Update()
     {
-        // Ativa/Desativa o Pause ao pressionar a tecla P
-        if (Keyboard.current != null && Keyboard.current.pKey.wasPressedThisFrame)
+        if (Keyboard.current == null) return;
+
+        // 1. Tecla P: Alterna o estado do Pause (Abre/Fecha)
+        if (Keyboard.current.pKey.wasPressedThisFrame)
         {
             if (isPaused)
             {
@@ -59,29 +37,67 @@ public class PauseController : MonoBehaviour
             {
                 PauseGame();
             }
+            return;
+        }
+
+        // Se o jogo NÃO estiver pausado, ignora as outras teclas
+        if (!isPaused) return;
+
+        // 2. Comandos quando o menu de Pause Principal estiver aberto
+        if (!inSaveSlots)
+        {
+            // Tecla C: Continuar Jogando
+            if (Keyboard.current.cKey.wasPressedThisFrame)
+            {
+                ResumeGame();
+            }
+            // Tecla S: Abrir Painel de Saves (Slots)
+            else if (Keyboard.current.sKey.wasPressedThisFrame)
+            {
+                OpenSaveSlots();
+            }
+            // Tecla M: Voltar ao Menu Principal
+            else if (Keyboard.current.mKey.wasPressedThisFrame)
+            {
+                ReturnToMainMenu();
+            }
+        }
+        // 3. Comandos quando o painel de SLOTS estiver aberto
+        else
+        {
+            // Tecla 1, 2 ou 3 para salvar no Slot correspondente
+            if (Keyboard.current.digit1Key.wasPressedThisFrame || Keyboard.current.numpad1Key.wasPressedThisFrame)
+            {
+                SaveGameToSlot(1);
+            }
+            else if (Keyboard.current.digit2Key.wasPressedThisFrame || Keyboard.current.numpad2Key.wasPressedThisFrame)
+            {
+                SaveGameToSlot(2);
+            }
+            else if (Keyboard.current.digit3Key.wasPressedThisFrame || Keyboard.current.numpad3Key.wasPressedThisFrame)
+            {
+                SaveGameToSlot(3);
+            }
+            // Tecla B: Voltar para o menu de pause anterior
+            else if (Keyboard.current.bKey.wasPressedThisFrame)
+            {
+                OpenPauseMenu();
+            }
         }
     }
 
     public void PauseGame()
     {
         isPaused = true;
-        Time.timeScale = 0f; // Congela a física e o tempo
-
-        // Liberar o ponteiro do mouse para clicar na UI
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-
+        Time.timeScale = 0f; // Pausa a física do jogo
         OpenPauseMenu();
     }
 
     public void ResumeGame()
     {
         isPaused = false;
-        Time.timeScale = 1f; // Retoma o jogo
-
-        // Ocultar/travar o ponteiro do mouse novamente
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        inSaveSlots = false;
+        Time.timeScale = 1f; // Volta o tempo do jogo
 
         if (pauseMenuPanel != null) pauseMenuPanel.SetActive(false);
         if (saveSlotsPanel != null) saveSlotsPanel.SetActive(false);
@@ -89,26 +105,23 @@ public class PauseController : MonoBehaviour
 
     public void OpenPauseMenu()
     {
+        inSaveSlots = false;
         if (pauseMenuPanel != null) pauseMenuPanel.SetActive(true);
         if (saveSlotsPanel != null) saveSlotsPanel.SetActive(false);
     }
 
     public void OpenSaveSlots()
     {
+        inSaveSlots = true;
         if (pauseMenuPanel != null) pauseMenuPanel.SetActive(false);
         if (saveSlotsPanel != null) saveSlotsPanel.SetActive(true);
     }
 
-    /// <summary>
-    /// Vincula a sessão atual ao Slot escolhido e realiza um save manual na posição atual
-    /// </summary>
     private void SaveGameToSlot(int slotIndex)
     {
-        // 1. Define o slot escolhido como o ativo para a partida
         PlayerPrefs.SetInt("CurrentActiveSlot", slotIndex);
         PlayerPrefs.Save();
 
-        // 2. Procura um SaveTrigger presente na cena usando a API moderna da Unity
         SaveTrigger activeTrigger = Object.FindAnyObjectByType<SaveTrigger>();
         if (activeTrigger != null)
         {
@@ -116,7 +129,6 @@ public class PauseController : MonoBehaviour
         }
         else
         {
-            // Gravação de emergência caso não haja um totem/checkpoint ativo na cena
             GameObject player = GameObject.FindWithTag("Player");
             if (player != null)
             {
@@ -137,18 +149,15 @@ public class PauseController : MonoBehaviour
             }
         }
 
-        Debug.Log($"[PauseController] Progresso fixado e salvo com SUCESSO no Slot {slotIndex}!");
-        
-        // Retorna ao painel de pause
+        Debug.Log($"[PauseController] Progresso salvo no Slot {slotIndex} via teclado!");
+
+        // Retorna ao menu de pause principal após salvar
         OpenPauseMenu();
     }
 
     public void ReturnToMainMenu()
     {
         Time.timeScale = 1f;
-
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
 
         if (GameManager.Instance != null)
         {
