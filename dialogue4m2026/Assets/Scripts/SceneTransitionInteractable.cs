@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 public class SceneTransitionInteractable : MonoBehaviour
 {
@@ -43,7 +44,7 @@ public class SceneTransitionInteractable : MonoBehaviour
 
     private void Update()
     {
-        // Se estiver perto do objeto e pressionar 'E', avança para a Fase 2
+        // Pressionar 'E' perto do portal/objeto aciona a transição
         if (isPlayerInside && Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
         {
             ExecuteTransitionToLevel2();
@@ -52,47 +53,51 @@ public class SceneTransitionInteractable : MonoBehaviour
 
     private void ExecuteTransitionToLevel2()
     {
-        // Oculta o botão de interação antes de carregar a cena
+        // Oculta a indicação visual de interação
         NotifyInteractable(false);
 
-        Debug.Log($"[Transição] Interação ativada na Fase 1! Carregando: {targetSceneName}");
+        // Identifica o slot atual (0 = Novo Jogo temporário, 1-3 = Slots salvos)
+        int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", 0);
+        Debug.Log($"[Transição] Trocando de fase no Slot {activeSlot}... Indo para: {targetSceneName}");
 
-        // 1. Reseta moedas no CoinManager no momento exato da troca de fase
+        // 1. Reseta as moedas coletadas na fase anterior
         if (CoinManager.Instance != null)
         {
             CoinManager.Instance.ResetCoinsForNewLevel();
         }
 
-        // 2. Limpa dados do checkpoint da Fase 1 do Slot 0 para o jogador iniciar no início da Fase 2
-        PlayerPrefs.DeleteKey("Slot0_HasCheckpoint");
-        PlayerPrefs.DeleteKey("Slot0_PosX");
-        PlayerPrefs.DeleteKey("Slot0_PosY");
-        PlayerPrefs.DeleteKey("Slot0_PosZ");
-        PlayerPrefs.SetInt("Slot0_Level", nextLevelNumber);
+        // 2. Limpa coordenadas legadas da Fase 1 do slot ativo para o player nascer no Spawn natural da Fase 2
+        PlayerPrefs.DeleteKey($"Slot{activeSlot}_HasCheckpoint");
+        PlayerPrefs.DeleteKey($"Slot{activeSlot}_PosX");
+        PlayerPrefs.DeleteKey($"Slot{activeSlot}_PosY");
+        PlayerPrefs.DeleteKey($"Slot{activeSlot}_PosZ");
+
+        // Atualiza a fase gravada neste slot
+        PlayerPrefs.SetInt($"Slot{activeSlot}_Level", nextLevelNumber);
         PlayerPrefs.Save();
 
-        // 3. Atualiza o progresso para Nível 2 no SaveSystem
+        // 3. Atualiza o arquivo físico via SaveSystem (usando o índice 0 da memória)
         if (SaveSystem.Instance != null)
         {
             try
             {
                 SaveSystem.Instance.SetPlayerLevel(nextLevelNumber, 0);
-                SaveSystem.Instance.SaveDataInFile(0);
+                SaveSystem.Instance.SaveDataInFile(activeSlot);
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[SceneTransition] Erro ao salvar no SaveSystem: {e.Message}");
+                Debug.LogWarning($"[SceneTransition] AVISO SaveSystem: {e.Message}");
             }
         }
 
-        // 4. Carrega a cena Gameplay 2
+        // 4. Carrega a nova cena
         if (GameManager.Instance != null)
         {
             GameManager.Instance.LoadGameScene(targetSceneName);
         }
         else
         {
-            UnityEngine.SceneManagement.SceneManager.LoadScene(targetSceneName);
+            SceneManager.LoadScene(targetSceneName);
         }
     }
 
