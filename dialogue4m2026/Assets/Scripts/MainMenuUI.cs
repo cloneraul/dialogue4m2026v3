@@ -28,7 +28,6 @@ public class MainMenuUI : MonoBehaviour
 
     private void SetupButtonListeners()
     {
-        // Limpa ouvintes anteriores para evitar chamadas duplicadas
         if (playButton != null)
         {
             playButton.onClick.RemoveAllListeners();
@@ -72,12 +71,9 @@ public class MainMenuUI : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Inicia Novo Jogo diretamente na Fase 1 sem vincular a um slot de arquivo.
-    /// </summary>
     public void OnClick_StartNewGameDirectly()
     {
-        Debug.Log("[MainMenuUI] Iniciando Novo Jogo na Fase 1...");
+        Debug.Log("[MainMenuUI] Iniciando Novo Jogo na Fase 1 (Slot 0)...");
 
         PlayerPrefs.SetInt("CurrentActiveSlot", 0);
         PlayerPrefs.Save();
@@ -90,19 +86,16 @@ public class MainMenuUI : MonoBehaviour
         LoadScene("Gameplay");
     }
 
-    /// <summary>
-    /// Seleciona o Slot para carregar. Se o slot estiver vazio, nada acontece.
-    /// </summary>
     public void OnSelectSlotToLoad(int slotIndex)
     {
-        // Verifica se há dados salvos para o slot escolhido
+        // Verifica se há dados salvos para o slot escolhido no PlayerPrefs
         bool hasSave = PlayerPrefs.GetInt($"Slot{slotIndex}_HasCheckpoint", 0) == 1 || 
                        PlayerPrefs.HasKey($"Slot{slotIndex}_Level");
 
         if (!hasSave)
         {
             Debug.LogWarning($"[MainMenuUI] Slot {slotIndex} está vazio! Nenhuma ação realizada.");
-            return; // Bloqueia o carregamento e mantém no painel de slots
+            return;
         }
 
         PlayerPrefs.SetInt("CurrentActiveSlot", slotIndex);

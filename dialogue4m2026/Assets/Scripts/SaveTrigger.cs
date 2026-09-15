@@ -14,9 +14,8 @@ public class SaveTrigger : MonoBehaviour
     [Tooltip("1 para Gameplay (Fase 1), 2 para Gameplay 2 (Fase 2)")]
     [SerializeField] private int currentLevel = 1;
 
-    [Header("Ajustes de Spawn e Botão 'E'")]
+    [Header("Ajustes da UI do Botão 'E'")]
     [SerializeField] private Vector3 buttonOffset = new Vector3(0, 1.5f, 0);
-    [SerializeField] private Vector3 spawnOffset = new Vector3(0, 0.5f, 0);
 
     private bool isPlayerInside = false;
     private bool isActivated = false;
@@ -51,6 +50,7 @@ public class SaveTrigger : MonoBehaviour
 
     private void Update()
     {
+        // Ao interagir com o totem via tecla 'E', salva a posição atual do jogador
         if (saveType == SaveType.TotemInterativo && isPlayerInside && Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
         {
             ExecuteSave();
@@ -61,19 +61,25 @@ public class SaveTrigger : MonoBehaviour
     {
         int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", 0);
 
-        // Se for Novo Jogo (Slot 0) e for um Checkpoint Automático, não salva em arquivo ainda
+        // Se for Novo Jogo (Slot 0), o progresso não é fixado em arquivo físico até o jogador escolher um slot no Pause
         if (activeSlot <= 0)
         {
             Debug.Log("[SaveTrigger] Checkpoint temporário alcançado. Escolha um Slot no menu Pause para fixar este progresso.");
             return;
         }
 
-        Vector3 centerPos = transform.position + spawnOffset;
+        // Captura a posição exata do Jogador na cena
+        Vector3 savePosition = transform.position;
+        GameObject player = GameObject.FindWithTag("Player");
+        if (player != null)
+        {
+            savePosition = player.transform.position;
+        }
 
-        // 1. Grava a Posição e Nível no Slot Ativo no PlayerPrefs
-        PlayerPrefs.SetFloat($"Slot{activeSlot}_PosX", centerPos.x);
-        PlayerPrefs.SetFloat($"Slot{activeSlot}_PosY", centerPos.y);
-        PlayerPrefs.SetFloat($"Slot{activeSlot}_PosZ", centerPos.z);
+        // 1. Grava Posição e Fase no PlayerPrefs do Slot Ativo (1, 2 ou 3)
+        PlayerPrefs.SetFloat($"Slot{activeSlot}_PosX", savePosition.x);
+        PlayerPrefs.SetFloat($"Slot{activeSlot}_PosY", savePosition.y);
+        PlayerPrefs.SetFloat($"Slot{activeSlot}_PosZ", savePosition.z);
         PlayerPrefs.SetInt($"Slot{activeSlot}_HasCheckpoint", 1);
         PlayerPrefs.SetInt($"Slot{activeSlot}_Level", currentLevel);
 
@@ -85,14 +91,13 @@ public class SaveTrigger : MonoBehaviour
 
         PlayerPrefs.Save();
 
-        // 3. Atualiza o SaveSystem (Convertendo Slot 1-3 para Índice 0-2 do Array)
+        // 3. Persiste no SaveSystem usando SEMPRE o índice 0 da lista em memória, gerando o arquivo individual do Slot (save1, save2, save3)
         if (SaveSystem.Instance != null)
         {
             try
             {
-                int arrayIndex = activeSlot - 1; // Previne 'Index out of range'
-                SaveSystem.Instance.SetPlayerLevel(currentLevel, arrayIndex);
-                SaveSystem.Instance.SaveDataInFile(arrayIndex);
+                SaveSystem.Instance.SetPlayerLevel(currentLevel, 0);
+                SaveSystem.Instance.SaveDataInFile(activeSlot);
             }
             catch (Exception e)
             {
@@ -100,7 +105,7 @@ public class SaveTrigger : MonoBehaviour
             }
         }
 
-        Debug.Log($"[SaveTrigger] Progresso salvo com SUCESSO no Slot {activeSlot}! Posição: {centerPos} | Fase: {currentLevel}");
+        Debug.Log($"[SaveTrigger] Progresso salvo com SUCESSO no Slot {activeSlot}! Posição do Jogador: {savePosition} | Fase: {currentLevel}");
     }
 
     // --- MÉTODOS AUXILIARES DO INTERACTOM ---

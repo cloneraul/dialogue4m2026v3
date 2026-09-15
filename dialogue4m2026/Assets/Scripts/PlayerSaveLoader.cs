@@ -19,7 +19,7 @@ public class PlayerSaveLoader : MonoBehaviour
         // 1. Identifica qual o Slot ativo da sessão atual
         int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", 0);
 
-        // 2. Se for 0 (Novo Jogo) ou se o Slot não tiver Checkpoint salvo, mantêm no início da fase
+        // 2. Se for 0 (Novo Jogo) ou se o Slot não tiver Checkpoint salvo, mantém no início da fase
         if (activeSlot == 0 || PlayerPrefs.GetInt($"Slot{activeSlot}_HasCheckpoint", 0) == 0)
         {
             Debug.Log($"[PlayerSaveLoader] Novo Jogo detectado (Slot {activeSlot}). Jogador mantido na posição inicial e moedas zeradas.");
@@ -42,7 +42,7 @@ public class PlayerSaveLoader : MonoBehaviour
         CharacterController controller = GetComponent<CharacterController>();
         if (controller != null) controller.enabled = false;
 
-        // Suporte para Rigidbody (utilizado no seu PlayerController)
+        // Suporte para Rigidbody
         Rigidbody rb = GetComponent<Rigidbody>();
         if (rb != null)
         {
