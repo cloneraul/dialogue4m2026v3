@@ -9438,7 +9438,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88bb69180f602c8409dffed8b734fa86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SaveTrigger
-  saveType: 0
+  saveType: 1
   currentLevel: 2
   buttonOffset: {x: 0, y: 1.5, z: 0}
   spawnOffset: {x: 0, y: 0.5, z: 0}
