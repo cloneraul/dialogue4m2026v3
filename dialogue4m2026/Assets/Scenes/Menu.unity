@@ -1249,7 +1249,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MainMenuUI
   mainPanel: {fileID: 1834489830}
   slotsPanel: {fileID: 1175084010}
-  playButton: {fileID: 0}
+  playButton: {fileID: 1208941117}
   newGameButton: {fileID: 1028029911}
   quitButton: {fileID: 1667690590}
   slot1Button: {fileID: 194820429}
