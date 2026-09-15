@@ -5,8 +5,8 @@ public class CoinManager : MonoBehaviour
 {
     public static CoinManager Instance { get; private set; }
 
-    private int currentCoins = 0; // Moedas coletadas na corrida atual
-    private int checkpointCoins = 0; // Moedas confirmadas no último checkpoint
+    private int currentCoins = 0;
+    private int checkpointCoins = 0;
     private HashSet<string> collectedCoinIDs = new HashSet<string>();
     private HashSet<string> checkpointCoinIDs = new HashSet<string>();
 
@@ -21,12 +21,14 @@ public class CoinManager : MonoBehaviour
         }
 
         Instance = this;
+        DontDestroyOnLoad(gameObject);
     }
 
     private void Start()
     {
-        // Carrega as moedas salvas no Slot 0 ao iniciar
-        LoadCheckpointCoins(0);
+        // Pega o slot ativo da sessão atual (1, 2, 3 ou 0 para Novo Jogo)
+        int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", 0);
+        LoadCheckpointCoins(activeSlot);
     }
 
     public void CollectCoin(Coin coin)
@@ -46,13 +48,9 @@ public class CoinManager : MonoBehaviour
     public bool IsCoinCollected(string coinID)
     {
         if (string.IsNullOrEmpty(coinID)) return false;
-        // Confere se a moeda já foi confirmada no checkpoint carregado
         return checkpointCoinIDs.Contains(coinID);
     }
 
-    /// <summary>
-    /// Salva o estado atual das moedas no Slot especificado quando o jogador toca em um Checkpoint ou Totem.
-    /// </summary>
     public void SaveCheckpointCoins(int slotIndex)
     {
         checkpointCoins = currentCoins;
@@ -60,7 +58,6 @@ public class CoinManager : MonoBehaviour
 
         PlayerPrefs.SetInt($"Slot{slotIndex}_Coins", checkpointCoins);
 
-        // Converte o HashSet de IDs em string separada por vírgula
         string idsFormatted = string.Join(",", checkpointCoinIDs);
         PlayerPrefs.SetString($"Slot{slotIndex}_CoinIDs", idsFormatted);
         PlayerPrefs.Save();
@@ -68,9 +65,6 @@ public class CoinManager : MonoBehaviour
         Debug.Log($"[CoinManager] Moedas salvas no Slot {slotIndex}! Total: {checkpointCoins}");
     }
 
-    /// <summary>
-    /// Carrega as moedas registradas no Slot especificado.
-    /// </summary>
     public void LoadCheckpointCoins(int slotIndex)
     {
         checkpointCoins = PlayerPrefs.GetInt($"Slot{slotIndex}_Coins", 0);
@@ -92,15 +86,12 @@ public class CoinManager : MonoBehaviour
         Debug.Log($"[CoinManager] Moedas carregadas do Slot {slotIndex}: {currentCoins}");
     }
 
-    /// <summary>
-    /// Zera o contador de moedas ao iniciar uma nova fase.
-    /// </summary>
     public void ResetCoinsForNewLevel()
     {
         currentCoins = 0;
         checkpointCoins = 0;
         collectedCoinIDs.Clear();
         checkpointCoinIDs.Clear();
-        Debug.Log("[CoinManager] Contador de moedas resetado para nova fase.");
+        Debug.Log("[CoinManager] Contador de moedas resetado.");
     }
 }

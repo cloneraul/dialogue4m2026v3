@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class Coin : MonoBehaviour
@@ -9,14 +10,16 @@ public class Coin : MonoBehaviour
     [Tooltip("Dê um ID único para cada moeda do mapa (ex: Coin_01, Coin_02)")]
     [SerializeField] private string coinID;
 
-    private bool collected = false;
+    private bool collected;
 
     public int Value => value;
     public string CoinID => coinID;
 
-    private void Start()
+    private IEnumerator Start()
     {
-        // Se a moeda já tiver sido salva como coletada no Checkpoint, desativa ela do cenário
+        // Aguarda 1 frame para garantir que o CoinManager.Instance tenha carregado as moedas do Slot ativo
+        yield return null;
+
         if (CoinManager.Instance != null && CoinManager.Instance.IsCoinCollected(coinID))
         {
             gameObject.SetActive(false);
