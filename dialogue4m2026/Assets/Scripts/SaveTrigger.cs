@@ -57,23 +57,20 @@ public class SaveTrigger : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Salva o progresso no Slot que o jogador escolheu ao iniciar/carregar
-    /// </summary>
     public void ExecuteSave()
     {
-        int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", 1);
+        int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", 0);
 
-        // Se o jogador iniciou em Novo Jogo (Slot 0), o primeiro Save fixa automaticamente no Slot 1 como padrão (ou no slot que você definir)
-        if (activeSlot == 0)
+        // Se for Novo Jogo (Slot 0) e for um Checkpoint Automático, não salva em arquivo ainda
+        if (activeSlot <= 0)
         {
-            activeSlot = 1;
-            PlayerPrefs.SetInt("CurrentActiveSlot", activeSlot);
+            Debug.Log("[SaveTrigger] Checkpoint temporário alcançado. Escolha um Slot no menu Pause para fixar este progresso.");
+            return;
         }
 
         Vector3 centerPos = transform.position + spawnOffset;
 
-        // 1. Grava a Posição e Nível no Slot Ativo
+        // 1. Grava a Posição e Nível no Slot Ativo no PlayerPrefs
         PlayerPrefs.SetFloat($"Slot{activeSlot}_PosX", centerPos.x);
         PlayerPrefs.SetFloat($"Slot{activeSlot}_PosY", centerPos.y);
         PlayerPrefs.SetFloat($"Slot{activeSlot}_PosZ", centerPos.z);
@@ -88,17 +85,18 @@ public class SaveTrigger : MonoBehaviour
 
         PlayerPrefs.Save();
 
-        // 3. Atualiza o SaveSystem
+        // 3. Atualiza o SaveSystem (Convertendo Slot 1-3 para Índice 0-2 do Array)
         if (SaveSystem.Instance != null)
         {
             try
             {
-                SaveSystem.Instance.SetPlayerLevel(currentLevel, activeSlot);
-                SaveSystem.Instance.SaveDataInFile(activeSlot);
+                int arrayIndex = activeSlot - 1; // Previne 'Index out of range'
+                SaveSystem.Instance.SetPlayerLevel(currentLevel, arrayIndex);
+                SaveSystem.Instance.SaveDataInFile(arrayIndex);
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[SaveSystem] Erro ao gravar arquivo: {e.Message}");
+                Debug.LogWarning($"[SaveSystem] Erro ao gravar arquivo no Slot {activeSlot}: {e.Message}");
             }
         }
 

@@ -19,10 +19,10 @@ public class PlayerSaveLoader : MonoBehaviour
         // 1. Identifica qual o Slot ativo da sessão atual
         int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", 0);
 
-        // 2. Se for 0 (Novo Jogo) ou se o Slot não tiver Checkpoint salvo, NÃO teletransporta o jogador
+        // 2. Se for 0 (Novo Jogo) ou se o Slot não tiver Checkpoint salvo, mantêm no início da fase
         if (activeSlot == 0 || PlayerPrefs.GetInt($"Slot{activeSlot}_HasCheckpoint", 0) == 0)
         {
-            Debug.Log($"[PlayerSaveLoader] Novo Jogo detectado (Slot {activeSlot}). Jogador mantido na posição inicial da cena e moedas zeradas.");
+            Debug.Log($"[PlayerSaveLoader] Novo Jogo detectado (Slot {activeSlot}). Jogador mantido na posição inicial e moedas zeradas.");
             
             if (CoinManager.Instance != null)
             {
@@ -38,15 +38,24 @@ public class PlayerSaveLoader : MonoBehaviour
 
         Vector3 targetPosition = new Vector3(posX, posY, posZ);
 
-        // Desativa temporariamente o CharacterController (se existir) para permitir o teletransporte sem colisão
+        // Suporte para CharacterController (se houver)
         CharacterController controller = GetComponent<CharacterController>();
         if (controller != null) controller.enabled = false;
+
+        // Suporte para Rigidbody (utilizado no seu PlayerController)
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.position = targetPosition;
+        }
 
         transform.position = targetPosition;
 
         if (controller != null) controller.enabled = true;
 
-        // Carrega também o contador de moedas salvo para este slot
+        // Carrega as moedas salvas para este Slot especificamente
         if (CoinManager.Instance != null)
         {
             CoinManager.Instance.LoadCheckpointCoins(activeSlot);
