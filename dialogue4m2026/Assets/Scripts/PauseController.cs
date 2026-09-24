@@ -47,10 +47,54 @@ public class PauseController : MonoBehaviour
 
     private void Update()
     {
-        if (Keyboard.current != null && Keyboard.current.pKey.wasPressedThisFrame)
+        if (Keyboard.current == null) return;
+
+        // 1. APENAS a tecla 'P' ativa/desativa o Pause
+        if (Keyboard.current.pKey.wasPressedThisFrame)
         {
             if (isPaused) ResumeGame();
             else PauseGame();
+        }
+
+        // 2. Atalhos de teclado quando o jogo ESTIVER PAUSADO
+        if (isPaused)
+        {
+            // Atalhos do Painel Principal do Pause
+            if (pauseMenuPanel != null && pauseMenuPanel.activeSelf)
+            {
+                if (Keyboard.current.cKey.wasPressedThisFrame)
+                {
+                    ResumeGame(); // Tecla C -> Continuar
+                }
+                else if (Keyboard.current.sKey.wasPressedThisFrame)
+                {
+                    OpenSaveSlots(); // Tecla S -> Abrir Slots de Save
+                }
+                else if (Keyboard.current.mKey.wasPressedThisFrame)
+                {
+                    ReturnToMainMenu(); // Tecla M -> Voltar ao Menu
+                }
+            }
+            // Atalhos no Painel de Slots (1, 2, 3 e Voltar)
+            else if (saveSlotsPanel != null && saveSlotsPanel.activeSelf)
+            {
+                if (Keyboard.current.digit1Key.wasPressedThisFrame || Keyboard.current.numpad1Key.wasPressedThisFrame)
+                {
+                    SaveProgressToTargetSlot(1);
+                }
+                else if (Keyboard.current.digit2Key.wasPressedThisFrame || Keyboard.current.numpad2Key.wasPressedThisFrame)
+                {
+                    SaveProgressToTargetSlot(2);
+                }
+                else if (Keyboard.current.digit3Key.wasPressedThisFrame || Keyboard.current.numpad3Key.wasPressedThisFrame)
+                {
+                    SaveProgressToTargetSlot(3);
+                }
+                else if (Keyboard.current.bKey.wasPressedThisFrame)
+                {
+                    OpenPauseMenu(); // Tecla B -> Voltar ao Menu de Pause
+                }
+            }
         }
     }
 
