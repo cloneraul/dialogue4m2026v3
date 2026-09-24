@@ -1,14 +1,18 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
-using UnityEngine.Windows;
-using File = System.IO.File;
 
 public class SaveSystem : MonoBehaviour
 {
     public static SaveSystem Instance;
+
+    private string dataPath;
+
+    // Lista que armazena os dados dos 4 slots em memória (0, 1, 2 e 3)
+    [SerializeField] private List<SaveData> saveDatas = new List<SaveData>();
 
     private void Awake()
     {
@@ -16,76 +20,113 @@ public class SaveSystem : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+
+            // Caminho base para salvar os arquivos com / para não grudar no nome da pasta
+            dataPath = Path.Combine(Application.persistentDataPath, "save_");
+
+            // Inicializa a lista com 4 Slots em memória (Slot 0, 1, 2 e 3)
             saveDatas = new List<SaveData>();
-            saveDatas.Add(new SaveData());
-            dataPath = Application.persistentDataPath+"save";
+            for (int i = 0; i < 4; i++)
+            {
+                saveDatas.Add(new SaveData());
+            }
         }
         else
         {
             Destroy(gameObject);
         }
     }
-    
-    private string dataPath;
-    [SerializeField] private List<SaveData> saveDatas;
-    
 
-    public void SetPlayerLevel(int level, int slot = 0)
+    // --- MÉTODOS DE ACESSO AO SAVE EM MEMÓRIA ---
+
+    public SaveData GetSaveData(int slot = 0)
     {
-        saveDatas[slot].playerLevel = level;
+        if (slot < 0 || slot >= saveDatas.Count) return null;
+        return saveDatas[slot];
     }
 
-    public int GetPlayerLevel(int slot = 0)
+    public void SetSaveData(SaveData data, int slot = 0)
     {
-        return saveDatas[slot].playerLevel;
+        if (slot < 0 || slot >= saveDatas.Count) return;
+        saveDatas[slot] = data;
     }
 
-    public void SetPlayerName(string playerName, int slot = 0)
-    {
-        saveDatas[slot].playerName = playerName;
-    }
+    // --- SALVAMENTO E CARREGAMENTO EM ARQUIVO (CRIPTOGRAFADO) ---
 
-    public string GetPlayerName(int slot = 0)
-    {
-        return saveDatas[slot].playerName;
-    }
-    
-    
-
+    /// <summary>
+    /// Salva os dados do slot especificado no disco e replica no Slot 0 (Autosave).
+    /// </summary>
     public void SaveDataInFile(int slot = 0)
     {
-        File.WriteAllText(dataPath+slot,Encryptor.Encrypt(saveDatas[slot].ToJson()));
+        if (slot < 0 || slot >= saveDatas.Count) return;
+
+        string path = dataPath + slot + ".dat";
+        string json = saveDatas[slot].ToJson();
+        string encryptedData = Encryptor.Encrypt(json);
+
+        File.WriteAllText(path, encryptedData);
+        Debug.Log($"[SaveSystem] Slot {slot} salvo com sucesso em: {path}");
+
+        // Regra do trabalho: Se salvou em um slot manual (1, 2 ou 3), replica ao mesmo tempo no Slot 0
+        if (slot != 0)
+        {
+            saveDatas[0] = saveDatas[slot];
+            string autoSavePath = dataPath + "0.dat";
+            File.WriteAllText(autoSavePath, encryptedData);
+            Debug.Log("[SaveSystem] Progresso replicado automaticamente no Slot 0 (Autosave).");
+        }
     }
 
+    /// <summary>
+    /// Carrega os dados do arquivo para a memória e replica no Slot 0 caso seja um slot manual.
+    /// </summary>
     public bool LoadDataInFile(int slot = 0)
     {
-        if (!File.Exists(dataPath + slot)) return false;
-        saveDatas[slot].FromJson(Encryptor.Decrypted(File.ReadAllText(dataPath + slot)));
-        return true;
-    }
-    
-    [Serializable]
-    public class SaveData
-    {
-        public int playerLevel;
-        public string playerName;
-        
-        public SaveData(int playerLevel=1, string playerName="")
+        string path = dataPath + slot + ".dat";
+
+        if (!File.Exists(path))
         {
-            this.playerLevel = playerLevel;
-            this.playerName = playerName;
-        }
-        
-        public string ToJson(){
-            return JsonUtility.ToJson(this);
+            Debug.LogWarning($"[SaveSystem] Arquivo do Slot {slot} não existe em: {path}");
+            return false;
         }
 
-        public void FromJson(string json)
+        try
         {
-            JsonUtility.FromJsonOverwrite(json, this);
+            string encryptedData = File.ReadAllText(path);
+            string json = Encryptor.Decrypted(encryptedData);
+
+            if (saveDatas[slot] == null) saveDatas[slot] = new SaveData();
+            saveDatas[slot].FromJson(json);
+
+            Debug.Log($"[SaveSystem] Slot {slot} carregado do disco com sucesso!");
+
+            // Regra do trabalho: Ao carregar um slot manual, copia esse estado para o Slot 0
+            if (slot != 0)
+            {
+                saveDatas[0] = saveDatas[slot];
+                SaveDataInFile(0);
+            }
+
+            return true;
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[SaveSystem] Erro ao carregar/decriptar o Slot {slot}: {e.Message}");
+            return false;
         }
     }
-    
+
+    /// <summary>
+    /// Verifica se existe arquivo de save criado para determinado slot
+    /// </summary>
+    public bool HasSaveFile(int slot)
+    {
+        string path = dataPath + slot + ".dat";
+        return File.Exists(path);
+    }
+
+    // --- ENCRIPTADOR AES MANTIDO INTEGRALMENTE ---
+
     private class Encryptor
     {
         public static string IV = "1a1a1a1a1a1a1a1a";
@@ -123,7 +164,4 @@ public class SaveSystem : MonoBehaviour
             return System.Text.ASCIIEncoding.ASCII.GetString(enc);
         }
     }
-    
-
-
 }
