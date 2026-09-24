@@ -86,6 +86,24 @@ public class CoinManager : MonoBehaviour
         Debug.Log($"[CoinManager] Moedas carregadas do Slot {slotIndex}: {currentCoins}");
     }
 
+    // --- MÉTODOS ADICIONADOS PARA INTEGRAÇÃO COM SAVESYSTEM E PAUSECONTROLLER ---
+
+    /// <summary>
+    /// Retorna a quantidade de moedas salvas para um slot específico.
+    /// </summary>
+    public int GetCheckpointCoins(int slotIndex)
+    {
+        return PlayerPrefs.GetInt($"Slot{slotIndex}_Coins", currentCoins);
+    }
+
+    /// <summary>
+    /// Retorna a lista de IDs de moedas salvas para um slot específico.
+    /// </summary>
+    public string GetCheckpointCoinIDs(int slotIndex)
+    {
+        return PlayerPrefs.GetString($"Slot{slotIndex}_CoinIDs", string.Join(",", collectedCoinIDs));
+    }
+
     public void ResetCoinsForNewLevel()
     {
         currentCoins = 0;

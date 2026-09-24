@@ -1,91 +1,50 @@
-using System;
-using System.Reflection;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
+[RequireComponent(typeof(Collider))]
 public class SaveTrigger : MonoBehaviour
 {
-    public enum SaveType { CheckpointAutomatico, TotemInterativo }
-
-    [Header("Tipo de Salvamento")]
-    [SerializeField] private SaveType saveType = SaveType.CheckpointAutomatico;
-
-    [Header("Ajustes da UI do Botão 'E'")]
-    [SerializeField] private Vector3 buttonOffset = new Vector3(0, 1.5f, 0);
-
-    private bool isPlayerInside = false;
     private bool isActivated = false;
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player"))
+        // Dispara o checkpoint automático assim que o Player entra na área pela primeira vez
+        if (other.CompareTag("Player") && !isActivated)
         {
-            isPlayerInside = true;
-
-            if (saveType == SaveType.CheckpointAutomatico && !isActivated)
-            {
-                isActivated = true;
-                ExecuteSave();
-            }
-            else if (saveType == SaveType.TotemInterativo)
-            {
-                NotifyInteractPosition(transform.position + buttonOffset);
-                NotifyInteractable(true);
-            }
+            isActivated = true;
+            ExecuteAutomaticSave(other.transform.position);
         }
     }
 
-    private void OnTriggerExit(Collider other)
+    private void ExecuteAutomaticSave(Vector3 playerPosition)
     {
-        if (other.CompareTag("Player") && saveType == SaveType.TotemInterativo)
-        {
-            isPlayerInside = false;
-            NotifyInteractable(false);
-        }
-    }
-
-    private void Update()
-    {
-        if (saveType == SaveType.TotemInterativo && isPlayerInside && Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
-        {
-            ExecuteSave();
-        }
-    }
-
-    public void ExecuteSave()
-    {
-        int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", 0); // 0 = Autosave/Temporário
-
-        Vector3 savePosition = transform.position;
-        GameObject player = GameObject.FindWithTag("Player");
-        if (player != null)
-        {
-            savePosition = player.transform.position;
-        }
-
+        int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", 0); // 0 = Autosave, 1-3 = Slot Manual Ativo
         string currentScene = SceneManager.GetActiveScene().name;
 
-        // 1. Grava dados no PlayerPrefs do Slot 0 (Autosave) e do Slot Ativo se houver
-        SaveToPlayerPrefs(0, savePosition, currentScene);
+        // 1. Grava os dados no PlayerPrefs para o Slot 0 (Autosave) e para o Slot Ativo
+        SaveToPlayerPrefs(0, playerPosition, currentScene);
         if (activeSlot > 0)
         {
-            SaveToPlayerPrefs(activeSlot, savePosition, currentScene);
+            SaveToPlayerPrefs(activeSlot, playerPosition, currentScene);
         }
 
+        // 2. Grava as moedas coletadas até este checkpoint
         if (CoinManager.Instance != null)
         {
             CoinManager.Instance.SaveCheckpointCoins(0);
-            if (activeSlot > 0) CoinManager.Instance.SaveCheckpointCoins(activeSlot);
+            if (activeSlot > 0)
+            {
+                CoinManager.Instance.SaveCheckpointCoins(activeSlot);
+            }
         }
 
         PlayerPrefs.Save();
 
-        // 2. Grava via SaveSystem no Slot 0 (Autosave) e replica no Slot Ativo
+        // 3. Atualiza o arquivo físico encriptado no SaveSystem
         if (SaveSystem.Instance != null)
         {
             SaveData data = SaveSystem.Instance.GetSaveData(0) ?? new SaveData();
-            data.SetPlayerPosition(savePosition);
+            data.SetPlayerPosition(playerPosition);
             data.currentSceneName = currentScene;
 
             if (CoinManager.Instance != null)
@@ -93,9 +52,11 @@ public class SaveTrigger : MonoBehaviour
                 data.totalCoins = CoinManager.Instance.GetCheckpointCoins(0);
             }
 
+            // Grava no Slot 0 (Autosave)
             SaveSystem.Instance.SetSaveData(data, 0);
             SaveSystem.Instance.SaveDataInFile(0);
 
+            // Replicando no slot ativo se houver
             if (activeSlot > 0)
             {
                 SaveSystem.Instance.SetSaveData(data, activeSlot);
@@ -103,7 +64,7 @@ public class SaveTrigger : MonoBehaviour
             }
         }
 
-        Debug.Log($"[SaveTrigger] Checkpoint/Totem salvo com SUCESSO no Autosave (Slot 0) e Slot {activeSlot}!");
+        Debug.Log($"[SaveTrigger Automático] Checkpoint alcançado! Posição salva: {playerPosition} | Slot Ativo: {activeSlot}");
     }
 
     private void SaveToPlayerPrefs(int slot, Vector3 pos, string sceneName)
@@ -113,41 +74,5 @@ public class SaveTrigger : MonoBehaviour
         PlayerPrefs.SetFloat($"Slot{slot}_PosZ", pos.z);
         PlayerPrefs.SetInt($"Slot{slot}_HasCheckpoint", 1);
         PlayerPrefs.SetString($"Slot{slot}_Scene", sceneName);
-    }
-
-    // --- MÉTODOS AUXILIARES DO INTERACTOM ---
-
-    private void NotifyInteractable(bool state)
-    {
-        Type type = typeof(InteractOM);
-        FieldInfo field = type.GetField("OnInteractable", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-        if (field != null)
-        {
-            MulticastDelegate multicast = field.GetValue(null) as MulticastDelegate;
-            if (multicast != null)
-            {
-                foreach (Delegate del in multicast.GetInvocationList())
-                {
-                    del.DynamicInvoke(state);
-                }
-            }
-        }
-    }
-
-    private void NotifyInteractPosition(Vector3 pos)
-    {
-        Type type = typeof(InteractOM);
-        FieldInfo field = type.GetField("InteractPosition", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-        if (field != null)
-        {
-            MulticastDelegate multicast = field.GetValue(null) as MulticastDelegate;
-            if (multicast != null)
-            {
-                foreach (Delegate del in multicast.GetInvocationList())
-                {
-                    del.DynamicInvoke(pos);
-                }
-            }
-        }
     }
 }
