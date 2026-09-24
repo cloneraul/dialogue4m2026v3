@@ -7,10 +7,11 @@ public class MainMenuUI : MonoBehaviour
     [Header("Painéis")]
     [SerializeField] private GameObject mainPanel;
     [SerializeField] private GameObject slotsPanel;
+    [SerializeField] private GameObject noSavesMessagePanel;
 
     [Header("Botões do Menu Principal")]
-    [SerializeField] private Button playButton; // Botão "Carregar Jogo"
-    [SerializeField] private Button newGameButton; // Botão "Novo Jogo"
+    [SerializeField] private Button playButton;     // Botão "Carregar Jogo"
+    [SerializeField] private Button newGameButton;  // Botão "Novo Jogo"
     [SerializeField] private Button quitButton;
 
     [Header("Botões dos Slots")]
@@ -31,7 +32,7 @@ public class MainMenuUI : MonoBehaviour
         if (playButton != null)
         {
             playButton.onClick.RemoveAllListeners();
-            playButton.onClick.AddListener(ShowSlotsPanel);
+            playButton.onClick.AddListener(OnClick_LoadGameButton);
         }
 
         if (newGameButton != null)
@@ -73,9 +74,16 @@ public class MainMenuUI : MonoBehaviour
 
     public void OnClick_StartNewGameDirectly()
     {
-        Debug.Log("[MainMenuUI] Iniciando Novo Jogo na Fase 1 (Slot 0)...");
+        Debug.Log("[MainMenuUI] Iniciando Novo Jogo em sessão limpa (Sem Slot associado)...");
 
-        PlayerPrefs.SetInt("CurrentActiveSlot", 0);
+        // -1 indica que é uma nova sessão temporária (não lê dados do disco)
+        PlayerPrefs.SetInt("CurrentActiveSlot", -1);
+
+        // Limpa resíduos da sessão temporária anterior
+        PlayerPrefs.DeleteKey("Slot0_HasCheckpoint");
+        PlayerPrefs.DeleteKey("Slot0_PosX");
+        PlayerPrefs.DeleteKey("Slot0_PosY");
+        PlayerPrefs.DeleteKey("Slot0_PosZ");
         PlayerPrefs.Save();
 
         if (CoinManager.Instance != null)
@@ -86,26 +94,74 @@ public class MainMenuUI : MonoBehaviour
         LoadScene("Gameplay");
     }
 
+    public void OnClick_LoadGameButton()
+    {
+        bool hasAnySave = CheckSlotHasSave(1) || CheckSlotHasSave(2) || CheckSlotHasSave(3);
+
+        if (hasAnySave)
+        {
+            ShowSlotsPanel();
+        }
+        else
+        {
+            Debug.LogWarning("[MainMenuUI] Nenhum save manual nos Slots 1, 2 ou 3 foi encontrado.");
+            if (noSavesMessagePanel != null)
+            {
+                noSavesMessagePanel.SetActive(true);
+            }
+        }
+    }
+
     public void OnSelectSlotToLoad(int slotIndex)
     {
-        // Verifica se há dados salvos para o slot escolhido no PlayerPrefs
-        bool hasSave = PlayerPrefs.GetInt($"Slot{slotIndex}_HasCheckpoint", 0) == 1 || 
-                       PlayerPrefs.HasKey($"Slot{slotIndex}_Level");
-
-        if (!hasSave)
-        {
-            Debug.LogWarning($"[MainMenuUI] Slot {slotIndex} está vazio! Nenhuma ação realizada.");
-            return;
-        }
+        if (!CheckSlotHasSave(slotIndex)) return;
 
         PlayerPrefs.SetInt("CurrentActiveSlot", slotIndex);
         PlayerPrefs.Save();
 
-        int savedLevel = PlayerPrefs.GetInt($"Slot{slotIndex}_Level", 1);
-        string targetScene = (savedLevel == 2) ? "Gameplay 2" : "Gameplay";
+        string targetScene = "Gameplay";
 
-        Debug.Log($"[MainMenuUI] Carregando Slot {slotIndex} -> Fase: {savedLevel} ({targetScene})");
+        if (SaveSystem.Instance != null && SaveSystem.Instance.HasSaveFile(slotIndex))
+        {
+            SaveSystem.Instance.LoadDataInFile(slotIndex);
+            SaveData data = SaveSystem.Instance.GetSaveData(slotIndex);
+            if (data != null && !string.IsNullOrEmpty(data.currentSceneName))
+            {
+                targetScene = data.currentSceneName;
+            }
+        }
+        else
+        {
+            targetScene = PlayerPrefs.GetString($"Slot{slotIndex}_Scene", "");
+            if (string.IsNullOrEmpty(targetScene))
+            {
+                int savedLevel = PlayerPrefs.GetInt($"Slot{slotIndex}_Level", 1);
+                targetScene = (savedLevel == 2) ? "Gameplay 2" : "Gameplay";
+            }
+        }
+
+        Debug.Log($"[MainMenuUI] Carregando Slot {slotIndex} -> Cena: {targetScene}");
         LoadScene(targetScene);
+    }
+
+    private void RefreshSlotsInteractability()
+    {
+        if (slot1Button != null) slot1Button.interactable = CheckSlotHasSave(1);
+        if (slot2Button != null) slot2Button.interactable = CheckSlotHasSave(2);
+        if (slot3Button != null) slot3Button.interactable = CheckSlotHasSave(3);
+    }
+
+    private bool CheckSlotHasSave(int slotIndex)
+    {
+        if (slotIndex <= 0) return false;
+
+        bool hasPrefs = PlayerPrefs.GetInt($"Slot{slotIndex}_HasCheckpoint", 0) == 1 ||
+                        PlayerPrefs.HasKey($"Slot{slotIndex}_Level") ||
+                        PlayerPrefs.HasKey($"Slot{slotIndex}_Scene");
+
+        bool hasFile = SaveSystem.Instance != null && SaveSystem.Instance.HasSaveFile(slotIndex);
+
+        return hasPrefs || hasFile;
     }
 
     private void LoadScene(string sceneName)
@@ -136,11 +192,15 @@ public class MainMenuUI : MonoBehaviour
     {
         if (mainPanel != null) mainPanel.SetActive(true);
         if (slotsPanel != null) slotsPanel.SetActive(false);
+        if (noSavesMessagePanel != null) noSavesMessagePanel.SetActive(false);
     }
 
     public void ShowSlotsPanel()
     {
         if (mainPanel != null) mainPanel.SetActive(false);
         if (slotsPanel != null) slotsPanel.SetActive(true);
+        if (noSavesMessagePanel != null) noSavesMessagePanel.SetActive(false);
+
+        RefreshSlotsInteractability();
     }
 }

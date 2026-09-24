@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
@@ -8,46 +9,48 @@ public class PauseController : MonoBehaviour
     [SerializeField] private GameObject pauseMenuPanel;
     [SerializeField] private GameObject saveSlotsPanel;
 
-    [Header("Configurações de Cena")]
-    [SerializeField] private string menuSceneName = "MainMenu";
+    [Header("Botões do Menu de Pause")]
+    [SerializeField] private Button resumeButton;
+    [SerializeField] private Button saveButton;
+    [SerializeField] private Button mainMenuButton;
 
-    private bool isPaused = false;
-    private bool inSaveSlots = false;
+    [Header("Botões do Painel de Slots")]
+    [SerializeField] private Button slot1Button;
+    [SerializeField] private Button slot2Button;
+    [SerializeField] private Button slot3Button;
+    [SerializeField] private Button backToPauseButton;
+
+    [Header("Configurações de Cena")]
+    [SerializeField] private string menuSceneName = "Menu";
+
+    private bool isPaused;
 
     private void Start()
     {
         if (pauseMenuPanel != null) pauseMenuPanel.SetActive(false);
         if (saveSlotsPanel != null) saveSlotsPanel.SetActive(false);
+
+        SetupButtonListeners();
+    }
+
+    private void SetupButtonListeners()
+    {
+        if (resumeButton != null) resumeButton.onClick.AddListener(ResumeGame);
+        if (saveButton != null) saveButton.onClick.AddListener(OpenSaveSlots);
+        if (mainMenuButton != null) mainMenuButton.onClick.AddListener(ReturnToMainMenu);
+
+        if (slot1Button != null) slot1Button.onClick.AddListener(() => SaveProgressToTargetSlot(1));
+        if (slot2Button != null) slot2Button.onClick.AddListener(() => SaveProgressToTargetSlot(2));
+        if (slot3Button != null) slot3Button.onClick.AddListener(() => SaveProgressToTargetSlot(3));
+        if (backToPauseButton != null) backToPauseButton.onClick.AddListener(OpenPauseMenu);
     }
 
     private void Update()
     {
-        if (Keyboard.current == null) return;
-
-        // 1. Tecla P: Alterna o Pause
-        if (Keyboard.current.pKey.wasPressedThisFrame)
+        if (Keyboard.current != null && Keyboard.current.pKey.wasPressedThisFrame)
         {
             if (isPaused) ResumeGame();
             else PauseGame();
-            return;
-        }
-
-        if (!isPaused) return;
-
-        // 2. Comandos do Menu Principal de Pause
-        if (!inSaveSlots)
-        {
-            if (Keyboard.current.cKey.wasPressedThisFrame) ResumeGame();
-            else if (Keyboard.current.sKey.wasPressedThisFrame) OpenSaveSlots();
-            else if (Keyboard.current.mKey.wasPressedThisFrame) ReturnToMainMenu();
-        }
-        // 3. Comandos na Seleção de Slots (1, 2 ou 3)
-        else
-        {
-            if (Keyboard.current.digit1Key.wasPressedThisFrame || Keyboard.current.numpad1Key.wasPressedThisFrame) SaveGameToSlot(1);
-            else if (Keyboard.current.digit2Key.wasPressedThisFrame || Keyboard.current.numpad2Key.wasPressedThisFrame) SaveGameToSlot(2);
-            else if (Keyboard.current.digit3Key.wasPressedThisFrame || Keyboard.current.numpad3Key.wasPressedThisFrame) SaveGameToSlot(3);
-            else if (Keyboard.current.bKey.wasPressedThisFrame) OpenPauseMenu();
         }
     }
 
@@ -55,14 +58,20 @@ public class PauseController : MonoBehaviour
     {
         isPaused = true;
         Time.timeScale = 0f;
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
         OpenPauseMenu();
     }
 
     public void ResumeGame()
     {
         isPaused = false;
-        inSaveSlots = false;
         Time.timeScale = 1f;
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
 
         if (pauseMenuPanel != null) pauseMenuPanel.SetActive(false);
         if (saveSlotsPanel != null) saveSlotsPanel.SetActive(false);
@@ -70,68 +79,73 @@ public class PauseController : MonoBehaviour
 
     public void OpenPauseMenu()
     {
-        inSaveSlots = false;
         if (pauseMenuPanel != null) pauseMenuPanel.SetActive(true);
         if (saveSlotsPanel != null) saveSlotsPanel.SetActive(false);
     }
 
     public void OpenSaveSlots()
     {
-        inSaveSlots = true;
         if (pauseMenuPanel != null) pauseMenuPanel.SetActive(false);
         if (saveSlotsPanel != null) saveSlotsPanel.SetActive(true);
     }
 
-    private void SaveGameToSlot(int slotIndex)
+    private void SaveProgressToTargetSlot(int targetSlot)
     {
-        PlayerPrefs.SetInt("CurrentActiveSlot", slotIndex);
-
         GameObject player = GameObject.FindWithTag("Player");
-        if (player != null)
-        {
-            string sceneName = SceneManager.GetActiveScene().name;
-            int currentLevel = (sceneName == "Gameplay 2") ? 2 : 1;
+        Vector3 savePos = (player != null) ? player.transform.position : Vector3.zero;
+        string currentScene = SceneManager.GetActiveScene().name;
 
-            // 1. Grava no PlayerPrefs (para compatibilidade rápida)
-            PlayerPrefs.SetFloat($"Slot{slotIndex}_PosX", player.transform.position.x);
-            PlayerPrefs.SetFloat($"Slot{slotIndex}_PosY", player.transform.position.y);
-            PlayerPrefs.SetFloat($"Slot{slotIndex}_PosZ", player.transform.position.z);
-            PlayerPrefs.SetInt($"Slot{slotIndex}_HasCheckpoint", 1);
-            PlayerPrefs.SetInt($"Slot{slotIndex}_Level", currentLevel);
+        // Se passou por um Checkpoint recente nesta sessão, usa as coordenadas salvas dele
+        if (PlayerPrefs.GetInt("Slot0_HasCheckpoint", 0) == 1)
+        {
+            savePos.x = PlayerPrefs.GetFloat("Slot0_PosX", savePos.x);
+            savePos.y = PlayerPrefs.GetFloat("Slot0_PosY", savePos.y);
+            savePos.z = PlayerPrefs.GetFloat("Slot0_PosZ", savePos.z);
+        }
+
+        // Vincula a sessão atual oficialmente ao Slot escolhido
+        PlayerPrefs.SetInt("CurrentActiveSlot", targetSlot);
+
+        // Salva nos PlayerPrefs do slot
+        PlayerPrefs.SetFloat($"Slot{targetSlot}_PosX", savePos.x);
+        PlayerPrefs.SetFloat($"Slot{targetSlot}_PosY", savePos.y);
+        PlayerPrefs.SetFloat($"Slot{targetSlot}_PosZ", savePos.z);
+        PlayerPrefs.SetInt($"Slot{targetSlot}_HasCheckpoint", 1);
+        PlayerPrefs.SetString($"Slot{targetSlot}_Scene", currentScene);
+
+        if (CoinManager.Instance != null)
+        {
+            CoinManager.Instance.SaveCheckpointCoins(targetSlot);
+        }
+
+        PlayerPrefs.Save();
+
+        // Grava no arquivo encriptado físico
+        if (SaveSystem.Instance != null)
+        {
+            SaveData data = new SaveData();
+            data.SetPlayerPosition(savePos);
+            data.currentSceneName = currentScene;
 
             if (CoinManager.Instance != null)
             {
-                CoinManager.Instance.SaveCheckpointCoins(slotIndex);
+                data.totalCoins = CoinManager.Instance.CurrentCoins;
             }
 
-            PlayerPrefs.Save();
-
-            // 2. Grava no SaveSystem (Arquivo físico encriptado)
-            if (SaveSystem.Instance != null)
-            {
-                SaveData data = SaveSystem.Instance.GetSaveData(slotIndex);
-                if (data == null) data = new SaveData();
-
-                data.SetPlayerPosition(player.transform.position);
-                data.currentSceneName = sceneName;
-
-                if (CoinManager.Instance != null)
-                {
-                    data.totalCoins = CoinManager.Instance.GetCheckpointCoins(slotIndex);
-                }
-
-                SaveSystem.Instance.SetSaveData(data, slotIndex);
-                SaveSystem.Instance.SaveDataInFile(slotIndex); // Salva no Slot escolhido e replica no Slot 0 automaticamente
-            }
+            SaveSystem.Instance.SetSaveData(data, targetSlot);
+            SaveSystem.Instance.SaveDataInFile(targetSlot);
         }
 
-        Debug.Log($"[PauseController] Progresso salvo com SUCESSO no Slot {slotIndex} e replicado no Slot 0!");
+        Debug.Log($"[PauseController] Sessão vinculada e salva permanentemente no Slot {targetSlot}!");
         ResumeGame();
     }
 
     public void ReturnToMainMenu()
     {
         Time.timeScale = 1f;
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
 
         if (GameManager.Instance != null)
         {

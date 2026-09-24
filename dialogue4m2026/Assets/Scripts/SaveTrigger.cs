@@ -1,78 +1,54 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-[RequireComponent(typeof(Collider))]
 public class SaveTrigger : MonoBehaviour
 {
-    private bool isActivated = false;
-
     private void OnTriggerEnter(Collider other)
     {
-        // Dispara o checkpoint automático assim que o Player entra na área pela primeira vez
-        if (other.CompareTag("Player") && !isActivated)
+        if (other.CompareTag("Player"))
         {
-            isActivated = true;
-            ExecuteAutomaticSave(other.transform.position);
-        }
-    }
+            Vector3 pos = other.transform.position;
+            string currentScene = SceneManager.GetActiveScene().name;
+            int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", -1);
 
-    private void ExecuteAutomaticSave(Vector3 playerPosition)
-    {
-        int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", 0); // 0 = Autosave, 1-3 = Slot Manual Ativo
-        string currentScene = SceneManager.GetActiveScene().name;
+            // 1. Atualiza temporariamente na memória (Slot 0)
+            PlayerPrefs.SetFloat("Slot0_PosX", pos.x);
+            PlayerPrefs.SetFloat("Slot0_PosY", pos.y);
+            PlayerPrefs.SetFloat("Slot0_PosZ", pos.z);
+            PlayerPrefs.SetInt("Slot0_HasCheckpoint", 1);
+            PlayerPrefs.Save();
 
-        // 1. Grava os dados no PlayerPrefs para o Slot 0 (Autosave) e para o Slot Ativo
-        SaveToPlayerPrefs(0, playerPosition, currentScene);
-        if (activeSlot > 0)
-        {
-            SaveToPlayerPrefs(activeSlot, playerPosition, currentScene);
-        }
-
-        // 2. Grava as moedas coletadas até este checkpoint
-        if (CoinManager.Instance != null)
-        {
-            CoinManager.Instance.SaveCheckpointCoins(0);
+            // 2. Se a sessão JÁ estiver vinculada a um slot fixo (1, 2 ou 3), atualiza ele automaticamente
             if (activeSlot > 0)
             {
-                CoinManager.Instance.SaveCheckpointCoins(activeSlot);
+                PlayerPrefs.SetFloat($"Slot{activeSlot}_PosX", pos.x);
+                PlayerPrefs.SetFloat($"Slot{activeSlot}_PosY", pos.y);
+                PlayerPrefs.SetFloat($"Slot{activeSlot}_PosZ", pos.z);
+                PlayerPrefs.SetInt($"Slot{activeSlot}_HasCheckpoint", 1);
+                PlayerPrefs.SetString($"Slot{activeSlot}_Scene", currentScene);
+                PlayerPrefs.Save();
+
+                if (SaveSystem.Instance != null)
+                {
+                    SaveData data = new SaveData();
+                    data.SetPlayerPosition(pos);
+                    data.currentSceneName = currentScene;
+
+                    if (CoinManager.Instance != null)
+                    {
+                        data.totalCoins = CoinManager.Instance.CurrentCoins;
+                    }
+
+                    SaveSystem.Instance.SetSaveData(data, activeSlot);
+                    SaveSystem.Instance.SaveDataInFile(activeSlot);
+                }
+
+                Debug.Log($"[SaveTrigger] Checkpoint atualizado com sucesso no Slot {activeSlot}!");
+            }
+            else
+            {
+                Debug.Log("[SaveTrigger] Checkpoint alcançado (registrado na memória temporária).");
             }
         }
-
-        PlayerPrefs.Save();
-
-        // 3. Atualiza o arquivo físico encriptado no SaveSystem
-        if (SaveSystem.Instance != null)
-        {
-            SaveData data = SaveSystem.Instance.GetSaveData(0) ?? new SaveData();
-            data.SetPlayerPosition(playerPosition);
-            data.currentSceneName = currentScene;
-
-            if (CoinManager.Instance != null)
-            {
-                data.totalCoins = CoinManager.Instance.GetCheckpointCoins(0);
-            }
-
-            // Grava no Slot 0 (Autosave)
-            SaveSystem.Instance.SetSaveData(data, 0);
-            SaveSystem.Instance.SaveDataInFile(0);
-
-            // Replicando no slot ativo se houver
-            if (activeSlot > 0)
-            {
-                SaveSystem.Instance.SetSaveData(data, activeSlot);
-                SaveSystem.Instance.SaveDataInFile(activeSlot);
-            }
-        }
-
-        Debug.Log($"[SaveTrigger Automático] Checkpoint alcançado! Posição salva: {playerPosition} | Slot Ativo: {activeSlot}");
-    }
-
-    private void SaveToPlayerPrefs(int slot, Vector3 pos, string sceneName)
-    {
-        PlayerPrefs.SetFloat($"Slot{slot}_PosX", pos.x);
-        PlayerPrefs.SetFloat($"Slot{slot}_PosY", pos.y);
-        PlayerPrefs.SetFloat($"Slot{slot}_PosZ", pos.z);
-        PlayerPrefs.SetInt($"Slot{slot}_HasCheckpoint", 1);
-        PlayerPrefs.SetString($"Slot{slot}_Scene", sceneName);
     }
 }
