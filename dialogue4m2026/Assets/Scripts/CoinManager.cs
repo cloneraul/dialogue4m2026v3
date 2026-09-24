@@ -37,22 +37,34 @@ public class CoinManager : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        // 1. Se voltou ao Menu ou Boot, limpa a contagem
         if (scene.name == "Menu" || scene.name == "_Boot")
         {
             ResetCoinsForNewLevel();
         }
+        // 2. Se entrou em qualquer cena de Gameplay
         else if (scene.name.StartsWith("Gameplay"))
         {
-            int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", -1);
+            int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", 0);
 
-            // Se for Novo Jogo (slot -1), ZERA tudo e NÃO lê nada salvo do disco
-            if (activeSlot < 0)
+            // Lê a última cena registrada no Slot
+            string savedScene = PlayerPrefs.GetString($"Slot{activeSlot}_Scene", "");
+
+            // SE for um Novo Jogo (slot -1) OU se a cena atual for DIFERENTE da cena salva no Slot
+            // (Significa que o jogador acabou de mudar da Fase 1 para a Fase 2)
+            if (activeSlot < 0 || (!string.IsNullOrEmpty(savedScene) && savedScene != scene.name))
             {
                 ResetCoinsForNewLevel();
-                Debug.Log("[CoinManager] Novo Jogo detectado. Moedas resetadas para 0.");
+
+                // Atualiza o PlayerPrefs para a nova cena sem moedas antigas acumuladas
+                PlayerPrefs.SetString($"Slot{activeSlot}_Scene", scene.name);
+                SaveCheckpointCoins(activeSlot);
+
+                Debug.Log($"[CoinManager] Nova Fase detetada ({scene.name}). Contador de moedas zerado com sucesso!");
             }
             else
             {
+                // Se for a MESMA cena (ex: morreu e recarregou ou carregou o Save do Menu), lê as moedas do checkpoint
                 LoadCheckpointCoins(activeSlot);
             }
         }

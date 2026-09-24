@@ -48,20 +48,31 @@ public class SceneTransitionInteractable : MonoBehaviour
 
         int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", 0);
 
-        // 1. Reseta as moedas para a nova fase
+        // 1. Zera o contador e a lista de moedas na memória do CoinManager
         if (CoinManager.Instance != null)
         {
             CoinManager.Instance.ResetCoinsForNewLevel();
         }
 
-        // 2. Limpa dados de posição antiga para o jogador nascer no Spawn inicial da nova fase
+        // 2. Apaga as moedas salvas no disco para o Slot Ativo e Slot 0
+        PlayerPrefs.DeleteKey($"Slot{activeSlot}_Coins");
+        PlayerPrefs.DeleteKey($"Slot{activeSlot}_CoinIDs");
+        PlayerPrefs.DeleteKey("Slot0_Coins");
+        PlayerPrefs.DeleteKey("Slot0_CoinIDs");
+
+        // 3. Apaga a posição de checkpoint antiga da Fase 1 (para nascer no Spawn inicial da Fase 2)
         PlayerPrefs.DeleteKey($"Slot{activeSlot}_HasCheckpoint");
-        PlayerPrefs.DeleteKey($"Slot0_HasCheckpoint");
+        PlayerPrefs.DeleteKey("Slot0_HasCheckpoint");
+
+        // 4. Atualiza a indicação do nível para a Fase 2
+        PlayerPrefs.SetInt($"Slot{activeSlot}_Level", 2);
+        PlayerPrefs.SetInt("Slot0_Level", 2);
         PlayerPrefs.SetString($"Slot{activeSlot}_Scene", targetSceneName);
-        PlayerPrefs.SetString($"Slot0_Scene", targetSceneName);
+        PlayerPrefs.SetString("Slot0_Scene", targetSceneName);
+
         PlayerPrefs.Save();
 
-        // 3. Atualiza o SaveSystem para a nova cena no Slot 0 (Autosave) e Slot Ativo
+        // 5. Atualiza o SaveSystem para indicar a nova cena
         if (SaveSystem.Instance != null)
         {
             SaveData data = new SaveData { currentSceneName = targetSceneName };
@@ -75,7 +86,9 @@ public class SceneTransitionInteractable : MonoBehaviour
             }
         }
 
-        // 4. Transição de cena
+        Debug.Log($"[SceneTransition] Mudando para {targetSceneName}. Dados de moedas e checkpoint antigos apagados!");
+
+        // 6. Realiza a transição de cena
         if (GameManager.Instance != null)
         {
             GameManager.Instance.LoadGameScene(targetSceneName);

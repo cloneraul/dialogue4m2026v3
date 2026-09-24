@@ -10,8 +10,8 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] private GameObject noSavesMessagePanel;
 
     [Header("Botões do Menu Principal")]
-    [SerializeField] private Button playButton;     // Botão "Carregar Jogo"
-    [SerializeField] private Button newGameButton;  // Botão "Novo Jogo"
+    [SerializeField] private Button playButton;     // Carregar Jogo
+    [SerializeField] private Button newGameButton;  // Novo Jogo
     [SerializeField] private Button quitButton;
 
     [Header("Botões dos Slots")]
@@ -74,12 +74,11 @@ public class MainMenuUI : MonoBehaviour
 
     public void OnClick_StartNewGameDirectly()
     {
-        Debug.Log("[MainMenuUI] Iniciando Novo Jogo em sessão limpa...");
+        Debug.Log("[MainMenuUI] Iniciando NOVO JOGO. Zerando Slot 0 (Temporário)...");
 
-        // -1 indica Novo Jogo sem slot atrelado
-        PlayerPrefs.SetInt("CurrentActiveSlot", -1);
+        // Define o Slot 0 como ativo e ZERA todas as chaves do Slot 0
+        PlayerPrefs.SetInt("CurrentActiveSlot", 0);
 
-        // Limpa o slot 0 temporário
         PlayerPrefs.DeleteKey("Slot0_HasCheckpoint");
         PlayerPrefs.DeleteKey("Slot0_PosX");
         PlayerPrefs.DeleteKey("Slot0_PosY");
@@ -108,7 +107,7 @@ public class MainMenuUI : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[MainMenuUI] Nenhum save encontrado nos Slots 1, 2 ou 3.");
+            Debug.LogWarning("[MainMenuUI] Nenhum save manual encontrado nos Slots 1, 2 ou 3.");
             if (noSavesMessagePanel != null)
             {
                 noSavesMessagePanel.SetActive(true);
@@ -120,8 +119,11 @@ public class MainMenuUI : MonoBehaviour
     {
         if (!CheckSlotHasSave(slotIndex)) return;
 
+        // Ativa o Slot Escolhido
         PlayerPrefs.SetInt("CurrentActiveSlot", slotIndex);
-        PlayerPrefs.Save();
+
+        // Copia os dados do Slot permanente para o Slot 0
+        CopySlotToAutosave(slotIndex);
 
         string targetScene = PlayerPrefs.GetString($"Slot{slotIndex}_Scene", "");
 
@@ -133,6 +135,30 @@ public class MainMenuUI : MonoBehaviour
 
         Debug.Log($"[MainMenuUI] Carregando Slot {slotIndex} -> Cena: {targetScene}");
         LoadScene(targetScene);
+    }
+
+    private void CopySlotToAutosave(int sourceSlot)
+    {
+        if (sourceSlot <= 0) return;
+
+        float x = PlayerPrefs.GetFloat($"Slot{sourceSlot}_PosX", 0f);
+        float y = PlayerPrefs.GetFloat($"Slot{sourceSlot}_PosY", 0f);
+        float z = PlayerPrefs.GetFloat($"Slot{sourceSlot}_PosZ", 0f);
+        int hasCheckpoint = PlayerPrefs.GetInt($"Slot{sourceSlot}_HasCheckpoint", 0);
+        int level = PlayerPrefs.GetInt($"Slot{sourceSlot}_Level", 1);
+        string scene = PlayerPrefs.GetString($"Slot{sourceSlot}_Scene", "Gameplay");
+        int coins = PlayerPrefs.GetInt($"Slot{sourceSlot}_Coins", 0);
+        string coinIDs = PlayerPrefs.GetString($"Slot{sourceSlot}_CoinIDs", "");
+
+        PlayerPrefs.SetFloat("Slot0_PosX", x);
+        PlayerPrefs.SetFloat("Slot0_PosY", y);
+        PlayerPrefs.SetFloat("Slot0_PosZ", z);
+        PlayerPrefs.SetInt("Slot0_HasCheckpoint", hasCheckpoint);
+        PlayerPrefs.SetInt("Slot0_Level", level);
+        PlayerPrefs.SetString("Slot0_Scene", scene);
+        PlayerPrefs.SetInt("Slot0_Coins", coins);
+        PlayerPrefs.SetString("Slot0_CoinIDs", coinIDs);
+        PlayerPrefs.Save();
     }
 
     private void RefreshSlotsInteractability()
