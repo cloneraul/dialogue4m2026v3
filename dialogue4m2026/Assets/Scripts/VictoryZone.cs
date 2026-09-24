@@ -50,13 +50,10 @@ public class VictoryZone : MonoBehaviour
             instructionText.text = "Pressione E no objeto verde para prosseguir";
         }
 
-        // 3. Salva o Autosave no Slot 0 para manter o estado da vitória
-        SaveAutosaveOnVictory();
-
-        // 4. Inicia o temporizador para fechar o painel após 5 segundos
+        // 3. Inicia o temporizador para fechar o painel após 5 segundos
         StartCoroutine(HidePanelAfterDelay());
 
-        Debug.Log($"[VictoryZone] Vitória registrada! Moedas: {currentCoins}/{totalCoinsInScene}. Autosave efetuado.");
+        Debug.Log($"[VictoryZone] Vitória registrada! Moedas: {currentCoins}/{totalCoinsInScene}. Painel exibido sem gravar Slot no disco.");
     }
 
     private IEnumerator HidePanelAfterDelay()
@@ -67,22 +64,5 @@ public class VictoryZone : MonoBehaviour
         {
             victoryPanel.SetActive(false);
         }
-    }
-
-    private void SaveAutosaveOnVictory()
-    {
-        if (SaveSystem.Instance != null)
-        {
-            try
-            {
-                SaveSystem.Instance.SaveDataInFile(0);
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"[SaveSystem] Gravação no autosave: {e.Message}");
-            }
-        }
-
-        PlayerPrefs.Save();
     }
 }
