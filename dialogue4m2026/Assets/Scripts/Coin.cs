@@ -17,11 +17,12 @@ public class Coin : MonoBehaviour
 
     private IEnumerator Start()
     {
-        // Aguarda 1 frame para garantir que o CoinManager.Instance tenha carregado as moedas do Slot ativo
+        // Aguarda a sincronização dos Singletons no carregamento da cena
         yield return null;
 
         if (CoinManager.Instance != null && CoinManager.Instance.IsCoinCollected(coinID))
         {
+            // Se a moeda já foi salva como coletada no Slot carregado, oculta da fase
             gameObject.SetActive(false);
         }
     }

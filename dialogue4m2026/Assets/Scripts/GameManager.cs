@@ -11,6 +11,9 @@ public class GameManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            
+            // Inscreve no evento de troca de cena para controlar a GUI automaticamente
+            SceneManager.sceneLoaded += OnSceneLoaded;
         }
         else
         {
@@ -18,50 +21,71 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void Start()
+    private void OnDestroy()
     {
-        LoadMenuScene();
+        if (Instance == this)
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
     }
 
-    // Carrega a cena do Menu Inicial e remove a GUI se estiver aberta
+    private void Start()
+    {
+        // Se for iniciado direto da cena _Boot, carrega o Menu
+        if (SceneManager.GetActiveScene().name == "_Boot")
+        {
+            LoadMenuScene();
+        }
+    }
+
+    // Chamado automaticamente SEMPRE que uma cena termina de carregar
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // 1. Se estiver no Menu (ou _Boot), garante que a cena GUI seja descarregada
+        if (scene.name == "Menu" || scene.name == "_Boot")
+        {
+            UnloadGUISceneIfLoaded();
+        }
+        // 2. Se estiver em qualquer fase de Gameplay (Gameplay, Gameplay 2, etc.)
+        else if (scene.name.StartsWith("Gameplay"))
+        {
+            EnsureGUISceneIsLoaded();
+        }
+    }
+
     public void LoadMenuScene()
     {
-        // Se a cena GUI estiver carregada, descarrega ela primeiro
+        SceneManager.LoadScene("Menu");
+    }
+
+    public void LoadGameScene(string sceneName = "Gameplay")
+    {
+        SceneManager.LoadScene(sceneName);
+    }
+
+    public void LoadGameScene(int sceneIndex)
+    {
+        SceneManager.LoadScene(sceneIndex);
+    }
+
+    private void EnsureGUISceneIsLoaded()
+    {
+        Scene guiScene = SceneManager.GetSceneByName("GUI");
+        if (!guiScene.isLoaded)
+        {
+            SceneManager.LoadSceneAsync("GUI", LoadSceneMode.Additive);
+        }
+    }
+
+    private void UnloadGUISceneIfLoaded()
+    {
         Scene guiScene = SceneManager.GetSceneByName("GUI");
         if (guiScene.isLoaded)
         {
             SceneManager.UnloadSceneAsync("GUI");
         }
-
-        SceneManager.LoadScene("Menu");
     }
 
-    // Carrega uma fase de Gameplay especificada e adiciona a GUI/HUD por cima obrigatoriamente
-    public void LoadGameScene(string sceneName = "Gameplay")
-    {
-        SceneManager.LoadScene(sceneName);
-
-        // Garante que a GUI só é carregada de forma aditiva se já não estiver na memória
-        Scene guiScene = SceneManager.GetSceneByName("GUI");
-        if (!guiScene.isLoaded)
-        {
-            SceneManager.LoadScene("GUI", LoadSceneMode.Additive);
-        }
-    }
-
-    // Método utilitário para carregar por índice do Build Settings
-    public void LoadGameScene(int sceneIndex)
-    {
-        SceneManager.LoadScene(sceneIndex);
-
-        Scene guiScene = SceneManager.GetSceneByName("GUI");
-        if (!guiScene.isLoaded)
-        {
-            SceneManager.LoadScene("GUI", LoadSceneMode.Additive);
-        }
-    }
-
-    // Fecha a aplicação
     public void QuitGame()
     {
 #if UNITY_EDITOR
