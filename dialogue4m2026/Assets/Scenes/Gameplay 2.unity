@@ -4565,6 +4565,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PauseController
   pauseMenuPanel: {fileID: 1543201307}
   saveSlotsPanel: {fileID: 1079784000}
+  resumeButton: {fileID: 1634576237}
+  saveButton: {fileID: 1037352877}
+  mainMenuButton: {fileID: 295026216}
+  slot1Button: {fileID: 1520821768}
+  slot2Button: {fileID: 1622598336}
+  slot3Button: {fileID: 796286362}
+  backToPauseButton: {fileID: 1378344937}
   menuSceneName: Menu
 --- !u!1 &875914491
 GameObject:
@@ -8790,7 +8797,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -2.8161926, y: 13.840897}
+  m_AnchoredPosition: {x: -2.816162, y: 13.840897}
   m_SizeDelta: {x: -403.8784, y: -296.8384}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1543201309
@@ -9438,9 +9445,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88bb69180f602c8409dffed8b734fa86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SaveTrigger
-  saveType: 0
-  currentLevel: 2
-  buttonOffset: {x: 0, y: 1.5, z: 0}
 --- !u!1 &1634576235
 GameObject:
   m_ObjectHideFlags: 0
@@ -10124,7 +10128,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28df54bc1773def4c9f9d8fd41444ee1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerSaveLoader
-  delayBeforeApply: 0.1
 --- !u!1 &1894077549
 GameObject:
   m_ObjectHideFlags: 0

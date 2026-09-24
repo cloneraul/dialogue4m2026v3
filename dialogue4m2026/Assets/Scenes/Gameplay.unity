@@ -1322,9 +1322,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88bb69180f602c8409dffed8b734fa86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CheckpointTrigger
-  saveType: 0
-  currentLevel: 1
-  buttonOffset: {x: 0, y: 1.5, z: 0}
 --- !u!65 &340830514
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2856,6 +2853,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PauseToMenu
   pauseMenuPanel: {fileID: 853895465}
   saveSlotsPanel: {fileID: 365283144}
+  resumeButton: {fileID: 2069753214}
+  saveButton: {fileID: 1818736753}
+  mainMenuButton: {fileID: 881177544}
+  slot1Button: {fileID: 1150614074}
+  slot2Button: {fileID: 1171944720}
+  slot3Button: {fileID: 1825718086}
+  backToPauseButton: {fileID: 1597237358}
   menuSceneName: Menu
 --- !u!4 &527633336
 Transform:
@@ -5807,7 +5811,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SceneTransitionInteractable
   targetSceneName: Gameplay 2
-  nextLevelNumber: 2
   buttonOffset: {x: 0, y: 2, z: 0}
 --- !u!65 &1037475864
 BoxCollider:
@@ -9975,7 +9978,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28df54bc1773def4c9f9d8fd41444ee1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerSaveLoader
-  delayBeforeApply: 0.1
 --- !u!1 &1853283691
 GameObject:
   m_ObjectHideFlags: 0
