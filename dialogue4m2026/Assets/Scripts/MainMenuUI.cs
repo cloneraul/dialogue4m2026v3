@@ -74,16 +74,20 @@ public class MainMenuUI : MonoBehaviour
 
     public void OnClick_StartNewGameDirectly()
     {
-        Debug.Log("[MainMenuUI] Iniciando Novo Jogo em sessão limpa (Sem Slot associado)...");
+        Debug.Log("[MainMenuUI] Iniciando Novo Jogo em sessão limpa...");
 
-        // -1 indica que é uma nova sessão temporária (não lê dados do disco)
+        // -1 indica Novo Jogo sem slot atrelado
         PlayerPrefs.SetInt("CurrentActiveSlot", -1);
 
-        // Limpa resíduos da sessão temporária anterior
+        // Limpa o slot 0 temporário
         PlayerPrefs.DeleteKey("Slot0_HasCheckpoint");
         PlayerPrefs.DeleteKey("Slot0_PosX");
         PlayerPrefs.DeleteKey("Slot0_PosY");
         PlayerPrefs.DeleteKey("Slot0_PosZ");
+        PlayerPrefs.DeleteKey("Slot0_Coins");
+        PlayerPrefs.DeleteKey("Slot0_CoinIDs");
+        PlayerPrefs.SetInt("Slot0_Level", 1);
+        PlayerPrefs.SetString("Slot0_Scene", "Gameplay");
         PlayerPrefs.Save();
 
         if (CoinManager.Instance != null)
@@ -104,7 +108,7 @@ public class MainMenuUI : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[MainMenuUI] Nenhum save manual nos Slots 1, 2 ou 3 foi encontrado.");
+            Debug.LogWarning("[MainMenuUI] Nenhum save encontrado nos Slots 1, 2 ou 3.");
             if (noSavesMessagePanel != null)
             {
                 noSavesMessagePanel.SetActive(true);
@@ -119,25 +123,12 @@ public class MainMenuUI : MonoBehaviour
         PlayerPrefs.SetInt("CurrentActiveSlot", slotIndex);
         PlayerPrefs.Save();
 
-        string targetScene = "Gameplay";
+        string targetScene = PlayerPrefs.GetString($"Slot{slotIndex}_Scene", "");
 
-        if (SaveSystem.Instance != null && SaveSystem.Instance.HasSaveFile(slotIndex))
+        if (string.IsNullOrEmpty(targetScene))
         {
-            SaveSystem.Instance.LoadDataInFile(slotIndex);
-            SaveData data = SaveSystem.Instance.GetSaveData(slotIndex);
-            if (data != null && !string.IsNullOrEmpty(data.currentSceneName))
-            {
-                targetScene = data.currentSceneName;
-            }
-        }
-        else
-        {
-            targetScene = PlayerPrefs.GetString($"Slot{slotIndex}_Scene", "");
-            if (string.IsNullOrEmpty(targetScene))
-            {
-                int savedLevel = PlayerPrefs.GetInt($"Slot{slotIndex}_Level", 1);
-                targetScene = (savedLevel == 2) ? "Gameplay 2" : "Gameplay";
-            }
+            int savedLevel = PlayerPrefs.GetInt($"Slot{slotIndex}_Level", 1);
+            targetScene = (savedLevel == 2) ? "Gameplay 2" : "Gameplay";
         }
 
         Debug.Log($"[MainMenuUI] Carregando Slot {slotIndex} -> Cena: {targetScene}");

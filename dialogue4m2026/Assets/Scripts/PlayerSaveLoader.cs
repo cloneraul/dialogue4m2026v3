@@ -1,16 +1,20 @@
+using System.Collections;
 using UnityEngine;
 
 public class PlayerSaveLoader : MonoBehaviour
 {
-    private void Start()
+    private IEnumerator Start()
     {
+        // Aguarda 1 frame para garantir que os Singletons da cena iniciaram corretamente
+        yield return null;
+
         int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", -1);
 
-        // Se for uma nova sessão temporária (-1 ou 0 sem checkpoint), ignora o carregamento do disco
-        if (activeSlot <= 0)
+        // Se for Novo Jogo (slot -1), não altera o jogador e deixa-o no spawn inicial do mapa
+        if (activeSlot < 0)
         {
-            Debug.Log("[PlayerSaveLoader] Sessão temporária iniciada. O Jogador permanecerá na posição padrão do mapa.");
-            return;
+            Debug.Log("[PlayerSaveLoader] Novo Jogo detectado. Jogador mantido na posição inicial.");
+            yield break;
         }
 
         LoadPlayerFromSlot(activeSlot);
@@ -19,35 +23,47 @@ public class PlayerSaveLoader : MonoBehaviour
     private void LoadPlayerFromSlot(int slotIndex)
     {
         GameObject player = GameObject.FindWithTag("Player");
-        if (player == null) return;
+        if (player == null)
+        {
+            Debug.LogWarning("[PlayerSaveLoader] Jogador não encontrado na cena!");
+            return;
+        }
 
-        Vector3 targetPosition = player.transform.position;
+        Vector3 targetPosition = Vector3.zero;
         bool positionFound = false;
 
-        // 1. Tenta carregar do SaveSystem
-        if (SaveSystem.Instance != null && SaveSystem.Instance.HasSaveFile(slotIndex))
+        // 1. PRIORIDADE: Checa PlayerPrefs (Mais recente)
+        if (PlayerPrefs.GetInt($"Slot{slotIndex}_HasCheckpoint", 0) == 1)
+        {
+            float x = PlayerPrefs.GetFloat($"Slot{slotIndex}_PosX");
+            float y = PlayerPrefs.GetFloat($"Slot{slotIndex}_PosY");
+            float z = PlayerPrefs.GetFloat($"Slot{slotIndex}_PosZ");
+
+            if (x != 0f || y != 0f || z != 0f)
+            {
+                targetPosition = new Vector3(x, y, z);
+                positionFound = true;
+            }
+        }
+
+        // 2. FALLBACK: SaveSystem em arquivo de disco
+        if (!positionFound && SaveSystem.Instance != null && SaveSystem.Instance.HasSaveFile(slotIndex))
         {
             SaveSystem.Instance.LoadDataInFile(slotIndex);
             SaveData data = SaveSystem.Instance.GetSaveData(slotIndex);
-            if (data != null)
+
+            if (data != null && data.GetPlayerPosition() != Vector3.zero)
             {
                 targetPosition = data.GetPlayerPosition();
                 positionFound = true;
             }
         }
 
-        // 2. Fallback para PlayerPrefs
-        if (!positionFound && PlayerPrefs.GetInt($"Slot{slotIndex}_HasCheckpoint", 0) == 1)
-        {
-            targetPosition.x = PlayerPrefs.GetFloat($"Slot{slotIndex}_PosX", targetPosition.x);
-            targetPosition.y = PlayerPrefs.GetFloat($"Slot{slotIndex}_PosY", targetPosition.y);
-            targetPosition.z = PlayerPrefs.GetFloat($"Slot{slotIndex}_PosZ", targetPosition.z);
-            positionFound = true;
-        }
-
         if (positionFound)
         {
-            // Se tiver Rigidbody, desativa a física durante o teleporte para evitar bugs
+            CharacterController cc = player.GetComponent<CharacterController>();
+            if (cc != null) cc.enabled = false;
+
             Rigidbody rb = player.GetComponent<Rigidbody>();
             if (rb != null)
             {
@@ -56,7 +72,10 @@ public class PlayerSaveLoader : MonoBehaviour
             }
 
             player.transform.position = targetPosition;
-            Debug.Log($"[PlayerSaveLoader] Jogador posicionado com SUCESSO no Slot {slotIndex}: {targetPosition}");
+
+            if (cc != null) cc.enabled = true;
+
+            Debug.Log($"[PlayerSaveLoader] Jogador reposicionado no Slot {slotIndex} em: {targetPosition}");
         }
     }
 }

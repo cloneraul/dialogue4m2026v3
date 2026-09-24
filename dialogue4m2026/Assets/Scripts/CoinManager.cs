@@ -43,9 +43,18 @@ public class CoinManager : MonoBehaviour
         }
         else if (scene.name.StartsWith("Gameplay"))
         {
-            // Ao carregar a cena de jogo, busca as moedas salvas do slot atualmente ativo
-            int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", 0);
-            LoadCheckpointCoins(activeSlot);
+            int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", -1);
+
+            // Se for Novo Jogo (slot -1), ZERA tudo e NÃO lê nada salvo do disco
+            if (activeSlot < 0)
+            {
+                ResetCoinsForNewLevel();
+                Debug.Log("[CoinManager] Novo Jogo detectado. Moedas resetadas para 0.");
+            }
+            else
+            {
+                LoadCheckpointCoins(activeSlot);
+            }
         }
     }
 
@@ -102,16 +111,6 @@ public class CoinManager : MonoBehaviour
         }
 
         Debug.Log($"[CoinManager] Moedas carregadas do Slot {slotIndex}: {currentCoins}");
-    }
-
-    public int GetCheckpointCoins(int slotIndex)
-    {
-        return PlayerPrefs.GetInt($"Slot{slotIndex}_Coins", 0);
-    }
-
-    public string GetCheckpointCoinIDs(int slotIndex)
-    {
-        return PlayerPrefs.GetString($"Slot{slotIndex}_CoinIDs", "");
     }
 
     public void ResetCoinsForNewLevel()
