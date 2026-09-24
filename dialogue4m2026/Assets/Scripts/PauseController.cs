@@ -89,9 +89,10 @@ public class PauseController : MonoBehaviour
         GameObject player = GameObject.FindWithTag("Player");
         if (player != null)
         {
-            int currentLevel = (SceneManager.GetActiveScene().name == "Gameplay 2") ? 2 : 1;
+            string sceneName = SceneManager.GetActiveScene().name;
+            int currentLevel = (sceneName == "Gameplay 2") ? 2 : 1;
 
-            // Save de coordenadas e estado no PlayerPrefs
+            // 1. Grava no PlayerPrefs (para compatibilidade rápida)
             PlayerPrefs.SetFloat($"Slot{slotIndex}_PosX", player.transform.position.x);
             PlayerPrefs.SetFloat($"Slot{slotIndex}_PosY", player.transform.position.y);
             PlayerPrefs.SetFloat($"Slot{slotIndex}_PosZ", player.transform.position.z);
@@ -105,22 +106,26 @@ public class PauseController : MonoBehaviour
 
             PlayerPrefs.Save();
 
-            // Chamada silenciosa do SaveSystem
+            // 2. Grava no SaveSystem (Arquivo físico encriptado)
             if (SaveSystem.Instance != null)
             {
-                try
+                SaveData data = SaveSystem.Instance.GetSaveData(slotIndex);
+                if (data == null) data = new SaveData();
+
+                data.SetPlayerPosition(player.transform.position);
+                data.currentSceneName = sceneName;
+
+                if (CoinManager.Instance != null)
                 {
-                    SaveSystem.Instance.SetPlayerLevel(currentLevel, 0);
-                    SaveSystem.Instance.SaveDataInFile(slotIndex);
+                    data.totalCoins = CoinManager.Instance.GetCheckpointCoins(slotIndex);
                 }
-                catch (System.Exception)
-                {
-                    // Exceção capturada e ignorada com segurança
-                }
+
+                SaveSystem.Instance.SetSaveData(data, slotIndex);
+                SaveSystem.Instance.SaveDataInFile(slotIndex); // Salva no Slot escolhido e replica no Slot 0 automaticamente
             }
         }
 
-        Debug.Log($"[PauseController] Progresso salvo com SUCESSO no Slot {slotIndex}!");
+        Debug.Log($"[PauseController] Progresso salvo com SUCESSO no Slot {slotIndex} e replicado no Slot 0!");
         ResumeGame();
     }
 

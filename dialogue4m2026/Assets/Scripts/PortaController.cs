@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 public class PortaController : MonoBehaviour
@@ -23,22 +22,20 @@ public class PortaController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.tag == "Player" && !isInteractable)
+        if (other.CompareTag("Player") && !isInteractable)
         {
             InteractOM.OnInteract += AbrirPorta;
             isInteractable = true;
-           // InteractOM.Interactable(isInteractable);
             InteractOM.PositionInteract(transform.position);
         }
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.tag == "Player" && isInteractable)
+        if (other.CompareTag("Player") && isInteractable)
         {
             InteractOM.OnInteract -= AbrirPorta;
             isInteractable = false;
-           // InteractOM.Interactable(isInteractable);
         }
     }
 
@@ -46,17 +43,28 @@ public class PortaController : MonoBehaviour
     {
         if (!isOpen)
         {
-            SaveSystem.Instance.SetPlayerLevel(2);
-            SaveSystem.Instance.SetPlayerName("Goku");
-            SaveSystem.Instance.SaveDataInFile();
-            anim.StopPlayback();
-            anim.Play("PortaAbrindo");
+            // Salva a abertura de porta no Autosave (Slot 0)
+            if (SaveSystem.Instance != null)
+            {
+                SaveData data = SaveSystem.Instance.GetSaveData(0) ?? new SaveData();
+                SaveSystem.Instance.SetSaveData(data, 0);
+                SaveSystem.Instance.SaveDataInFile(0);
+            }
+
+            if (anim != null)
+            {
+                anim.StopPlayback();
+                anim.Play("PortaAbrindo");
+            }
             isOpen = true;
         }
         else
         {
-            anim.StopPlayback();
-            anim.Play("PortaFechando");
+            if (anim != null)
+            {
+                anim.StopPlayback();
+                anim.Play("PortaFechando");
+            }
             isOpen = false;
         }
     }

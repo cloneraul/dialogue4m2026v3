@@ -16,14 +16,45 @@ public class PlayerSaveLoader : MonoBehaviour
     {
         yield return new WaitForSeconds(delayBeforeApply);
 
-        // 1. Identifica qual o Slot ativo da sessão atual
+        // Identifica qual o Slot ativo da sessão atual (0 = Autosave, 1, 2 ou 3 = Manual)
         int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", 0);
 
-        // 2. Se for 0 (Novo Jogo) ou se o Slot não tiver Checkpoint salvo, mantém no início da fase
-        if (activeSlot == 0 || PlayerPrefs.GetInt($"Slot{activeSlot}_HasCheckpoint", 0) == 0)
+        Vector3 targetPosition = Vector3.zero;
+        bool hasSavedPosition = false;
+
+        // 1. Tenta carregar a posição do arquivo do SaveSystem encriptado
+        if (SaveSystem.Instance != null && SaveSystem.Instance.HasSaveFile(activeSlot))
         {
-            Debug.Log($"[PlayerSaveLoader] Novo Jogo detectado (Slot {activeSlot}). Jogador mantido na posição inicial e moedas zeradas.");
-            
+            SaveSystem.Instance.LoadDataInFile(activeSlot);
+            SaveData data = SaveSystem.Instance.GetSaveData(activeSlot);
+
+            if (data != null && data.playerPosition != null && data.playerPosition.Length == 3)
+            {
+                targetPosition = data.GetPlayerPosition();
+                
+                // Se a posição gravada não for a origem default (0,0,0)
+                if (targetPosition != Vector3.zero)
+                {
+                    hasSavedPosition = true;
+                }
+            }
+        }
+
+        // 2. Backup: Se não achou no arquivo físico, busca no PlayerPrefs
+        if (!hasSavedPosition && PlayerPrefs.GetInt($"Slot{activeSlot}_HasCheckpoint", 0) == 1)
+        {
+            float posX = PlayerPrefs.GetFloat($"Slot{activeSlot}_PosX", transform.position.x);
+            float posY = PlayerPrefs.GetFloat($"Slot{activeSlot}_PosY", transform.position.y);
+            float posZ = PlayerPrefs.GetFloat($"Slot{activeSlot}_PosZ", transform.position.z);
+
+            targetPosition = new Vector3(posX, posY, posZ);
+            hasSavedPosition = true;
+        }
+
+        // 3. Se não houver nenhum checkpoint salvo (Novo Jogo do zero), mantém no início e reseta as moedas
+        if (!hasSavedPosition)
+        {
+            Debug.Log($"[PlayerSaveLoader] Nenhum checkpoint salvo no Slot {activeSlot}. Mantendo no início da fase.");
             if (CoinManager.Instance != null)
             {
                 CoinManager.Instance.ResetCoinsForNewLevel();
@@ -31,18 +62,10 @@ public class PlayerSaveLoader : MonoBehaviour
             yield break;
         }
 
-        // 3. Se for um Slot válido (1, 2 ou 3) com checkpoint gravado, carrega a posição salva
-        float posX = PlayerPrefs.GetFloat($"Slot{activeSlot}_PosX", transform.position.x);
-        float posY = PlayerPrefs.GetFloat($"Slot{activeSlot}_PosY", transform.position.y);
-        float posZ = PlayerPrefs.GetFloat($"Slot{activeSlot}_PosZ", transform.position.z);
-
-        Vector3 targetPosition = new Vector3(posX, posY, posZ);
-
-        // Suporte para CharacterController (se houver)
+        // 4. Aplica o Teleporte de Forma Segura
         CharacterController controller = GetComponent<CharacterController>();
         if (controller != null) controller.enabled = false;
 
-        // Suporte para Rigidbody
         Rigidbody rb = GetComponent<Rigidbody>();
         if (rb != null)
         {
@@ -55,12 +78,12 @@ public class PlayerSaveLoader : MonoBehaviour
 
         if (controller != null) controller.enabled = true;
 
-        // Carrega as moedas salvas para este Slot especificamente
+        // 5. Carrega o estado das moedas vinculadas ao slot carregado
         if (CoinManager.Instance != null)
         {
             CoinManager.Instance.LoadCheckpointCoins(activeSlot);
         }
 
-        Debug.Log($"[PlayerSaveLoader] Slot {activeSlot} carregado com SUCESSO! Posição: {targetPosition}");
+        Debug.Log($"[PlayerSaveLoader] Slot {activeSlot} carregado com SUCESSO! Posição carregada: {targetPosition}");
     }
 }

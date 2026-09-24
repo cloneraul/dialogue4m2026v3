@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 public class SaveTrigger : MonoBehaviour
 {
@@ -9,10 +10,6 @@ public class SaveTrigger : MonoBehaviour
 
     [Header("Tipo de Salvamento")]
     [SerializeField] private SaveType saveType = SaveType.CheckpointAutomatico;
-
-    [Header("Configurações da Fase")]
-    [Tooltip("1 para Gameplay (Fase 1), 2 para Gameplay 2 (Fase 2)")]
-    [SerializeField] private int currentLevel = 1;
 
     [Header("Ajustes da UI do Botão 'E'")]
     [SerializeField] private Vector3 buttonOffset = new Vector3(0, 1.5f, 0);
@@ -50,7 +47,6 @@ public class SaveTrigger : MonoBehaviour
 
     private void Update()
     {
-        // Ao interagir com o totem via tecla 'E', salva a posição atual do jogador
         if (saveType == SaveType.TotemInterativo && isPlayerInside && Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
         {
             ExecuteSave();
@@ -59,16 +55,8 @@ public class SaveTrigger : MonoBehaviour
 
     public void ExecuteSave()
     {
-        int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", 0);
+        int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", 0); // 0 = Autosave/Temporário
 
-        // Se for Novo Jogo (Slot 0), o progresso não é fixado em arquivo físico até o jogador escolher um slot no Pause
-        if (activeSlot <= 0)
-        {
-            Debug.Log("[SaveTrigger] Checkpoint temporário alcançado. Escolha um Slot no menu Pause para fixar este progresso.");
-            return;
-        }
-
-        // Captura a posição exata do Jogador na cena
         Vector3 savePosition = transform.position;
         GameObject player = GameObject.FindWithTag("Player");
         if (player != null)
@@ -76,36 +64,55 @@ public class SaveTrigger : MonoBehaviour
             savePosition = player.transform.position;
         }
 
-        // 1. Grava Posição e Fase no PlayerPrefs do Slot Ativo (1, 2 ou 3)
-        PlayerPrefs.SetFloat($"Slot{activeSlot}_PosX", savePosition.x);
-        PlayerPrefs.SetFloat($"Slot{activeSlot}_PosY", savePosition.y);
-        PlayerPrefs.SetFloat($"Slot{activeSlot}_PosZ", savePosition.z);
-        PlayerPrefs.SetInt($"Slot{activeSlot}_HasCheckpoint", 1);
-        PlayerPrefs.SetInt($"Slot{activeSlot}_Level", currentLevel);
+        string currentScene = SceneManager.GetActiveScene().name;
 
-        // 2. Grava as Moedas no Slot Ativo
+        // 1. Grava dados no PlayerPrefs do Slot 0 (Autosave) e do Slot Ativo se houver
+        SaveToPlayerPrefs(0, savePosition, currentScene);
+        if (activeSlot > 0)
+        {
+            SaveToPlayerPrefs(activeSlot, savePosition, currentScene);
+        }
+
         if (CoinManager.Instance != null)
         {
-            CoinManager.Instance.SaveCheckpointCoins(activeSlot);
+            CoinManager.Instance.SaveCheckpointCoins(0);
+            if (activeSlot > 0) CoinManager.Instance.SaveCheckpointCoins(activeSlot);
         }
 
         PlayerPrefs.Save();
 
-        // 3. Persiste no SaveSystem usando SEMPRE o índice 0 da lista em memória, gerando o arquivo individual do Slot (save1, save2, save3)
+        // 2. Grava via SaveSystem no Slot 0 (Autosave) e replica no Slot Ativo
         if (SaveSystem.Instance != null)
         {
-            try
+            SaveData data = SaveSystem.Instance.GetSaveData(0) ?? new SaveData();
+            data.SetPlayerPosition(savePosition);
+            data.currentSceneName = currentScene;
+
+            if (CoinManager.Instance != null)
             {
-                SaveSystem.Instance.SetPlayerLevel(currentLevel, 0);
-                SaveSystem.Instance.SaveDataInFile(activeSlot);
+                data.totalCoins = CoinManager.Instance.GetCheckpointCoins(0);
             }
-            catch (Exception e)
+
+            SaveSystem.Instance.SetSaveData(data, 0);
+            SaveSystem.Instance.SaveDataInFile(0);
+
+            if (activeSlot > 0)
             {
-                Debug.LogWarning($"[SaveSystem] Erro ao gravar arquivo no Slot {activeSlot}: {e.Message}");
+                SaveSystem.Instance.SetSaveData(data, activeSlot);
+                SaveSystem.Instance.SaveDataInFile(activeSlot);
             }
         }
 
-        Debug.Log($"[SaveTrigger] Progresso salvo com SUCESSO no Slot {activeSlot}! Posição do Jogador: {savePosition} | Fase: {currentLevel}");
+        Debug.Log($"[SaveTrigger] Checkpoint/Totem salvo com SUCESSO no Autosave (Slot 0) e Slot {activeSlot}!");
+    }
+
+    private void SaveToPlayerPrefs(int slot, Vector3 pos, string sceneName)
+    {
+        PlayerPrefs.SetFloat($"Slot{slot}_PosX", pos.x);
+        PlayerPrefs.SetFloat($"Slot{slot}_PosY", pos.y);
+        PlayerPrefs.SetFloat($"Slot{slot}_PosZ", pos.z);
+        PlayerPrefs.SetInt($"Slot{slot}_HasCheckpoint", 1);
+        PlayerPrefs.SetString($"Slot{slot}_Scene", sceneName);
     }
 
     // --- MÉTODOS AUXILIARES DO INTERACTOM ---
