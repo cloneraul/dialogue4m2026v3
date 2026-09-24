@@ -43,14 +43,6 @@ public class PortaController : MonoBehaviour
     {
         if (!isOpen)
         {
-            // Salva a abertura de porta no Autosave (Slot 0)
-            if (SaveSystem.Instance != null)
-            {
-                SaveData data = SaveSystem.Instance.GetSaveData(0) ?? new SaveData();
-                SaveSystem.Instance.SetSaveData(data, 0);
-                SaveSystem.Instance.SaveDataInFile(0);
-            }
-
             if (anim != null)
             {
                 anim.StopPlayback();
