@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerSaveLoader : MonoBehaviour
 {
@@ -16,13 +17,17 @@ public class PlayerSaveLoader : MonoBehaviour
     {
         yield return new WaitForSeconds(delayBeforeApply);
 
-        // 1. Identifica qual o Slot ativo da sessão atual
         int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", 0);
+        string currentScene = SceneManager.GetActiveScene().name;
 
-        // 2. Se for 0 (Novo Jogo) ou se o Slot não tiver Checkpoint salvo, NÃO teletransporta o jogador
-        if (activeSlot == 0 || PlayerPrefs.GetInt($"Slot{activeSlot}_HasCheckpoint", 0) == 0)
+        // Verifica qual cena está associada ao checkpoint gravado neste Slot
+        string savedScene = PlayerPrefs.GetString($"Slot{activeSlot}_Scene", "");
+        bool hasCheckpoint = PlayerPrefs.GetInt($"Slot{activeSlot}_HasCheckpoint", 0) == 1;
+
+        // SE for Slot 0 (novo/temporário), SE não tiver checkpoint OU SE a cena salva for DIFERENTE da cena atual (Transição para Nível Novo)
+        if (activeSlot == 0 || !hasCheckpoint || (!string.IsNullOrEmpty(savedScene) && savedScene != currentScene))
         {
-            Debug.Log($"[PlayerSaveLoader] Novo Jogo detectado (Slot {activeSlot}). Jogador mantido na posição inicial da cena.");
+            Debug.Log($"[PlayerSaveLoader] Início de fase/nova cena detectada ({currentScene}). Mantendo o jogador na posição inicial padrão.");
             
             if (CoinManager.Instance != null)
             {
@@ -31,7 +36,7 @@ public class PlayerSaveLoader : MonoBehaviour
             yield break;
         }
 
-        // 3. Se for um Slot válido (1, 2 ou 3) com checkpoint gravado, carrega a posição salva
+        // Se for a MESMA CENA onde o checkpoint foi salvo, aplica as coordenadas salvas
         float posX = PlayerPrefs.GetFloat($"Slot{activeSlot}_PosX", transform.position.x);
         float posY = PlayerPrefs.GetFloat($"Slot{activeSlot}_PosY", transform.position.y);
         float posZ = PlayerPrefs.GetFloat($"Slot{activeSlot}_PosZ", transform.position.z);
@@ -40,13 +45,13 @@ public class PlayerSaveLoader : MonoBehaviour
 
         ForcePlayerPosition(targetPosition);
 
-        // Carrega também o contador de moedas salvo para este slot
+        // Carrega também as moedas gravadas no checkpoint desta cena
         if (CoinManager.Instance != null)
         {
             CoinManager.Instance.LoadCheckpointCoins(activeSlot);
         }
 
-        Debug.Log($"[PlayerSaveLoader] Slot {activeSlot} carregado com SUCESSO! Posição: {targetPosition}");
+        Debug.Log($"[PlayerSaveLoader] Checkpoint da cena {currentScene} carregado com SUCESSO! Posição: {targetPosition}");
     }
 
     /// <summary>
@@ -54,14 +59,12 @@ public class PlayerSaveLoader : MonoBehaviour
     /// </summary>
     private void ForcePlayerPosition(Vector3 targetPosition)
     {
-        // Tratamento para CharacterController
         CharacterController controller = GetComponent<CharacterController>();
         if (controller != null)
         {
             controller.enabled = false;
         }
 
-        // Tratamento para Rigidbody (Evita o aviso de Kinematic no Console)
         Rigidbody rb = GetComponent<Rigidbody>();
         if (rb != null)
         {
@@ -72,7 +75,6 @@ public class PlayerSaveLoader : MonoBehaviour
             }
         }
 
-        // Aplica a nova posição no transform
         transform.position = targetPosition;
 
         if (controller != null)

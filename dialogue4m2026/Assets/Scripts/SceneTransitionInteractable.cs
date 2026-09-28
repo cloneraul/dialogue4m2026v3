@@ -13,7 +13,7 @@ public class SceneTransitionInteractable : MonoBehaviour
     [Header("Posição do Botão 'E'")]
     [SerializeField] private Vector3 buttonOffset = new Vector3(0, 2f, 0);
 
-    private bool isPlayerInside = false;
+    private bool isPlayerInside;
 
     private void OnTriggerEnter(Collider other)
     {
@@ -48,47 +48,25 @@ public class SceneTransitionInteractable : MonoBehaviour
 
         int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", 0);
 
-        // 1. Zera o contador e a lista de moedas na memória do CoinManager
+        // 1. Limpa o estado temporário de moedas
         if (CoinManager.Instance != null)
         {
             CoinManager.Instance.ResetCoinsForNewLevel();
         }
 
-        // 2. Apaga as moedas salvas no disco para o Slot Ativo e Slot 0
-        PlayerPrefs.DeleteKey($"Slot{activeSlot}_Coins");
-        PlayerPrefs.DeleteKey($"Slot{activeSlot}_CoinIDs");
+        // 2. Remove o indicador de checkpoint ativado no Slot 0 e Slot Ativo para a nova cena carregar no Spawn inicial
+        PlayerPrefs.SetInt($"Slot{activeSlot}_HasCheckpoint", 0);
+        PlayerPrefs.SetInt("Slot0_HasCheckpoint", 0);
+
+        // Limpa chaves temporárias do autosave
         PlayerPrefs.DeleteKey("Slot0_Coins");
         PlayerPrefs.DeleteKey("Slot0_CoinIDs");
 
-        // 3. Apaga a posição de checkpoint antiga da Fase 1 (para nascer no Spawn inicial da Fase 2)
-        PlayerPrefs.DeleteKey($"Slot{activeSlot}_HasCheckpoint");
-        PlayerPrefs.DeleteKey("Slot0_HasCheckpoint");
-
-        // 4. Atualiza a indicação do nível para a Fase 2
-        PlayerPrefs.SetInt($"Slot{activeSlot}_Level", 2);
-        PlayerPrefs.SetInt("Slot0_Level", 2);
-        PlayerPrefs.SetString($"Slot{activeSlot}_Scene", targetSceneName);
-        PlayerPrefs.SetString("Slot0_Scene", targetSceneName);
-
         PlayerPrefs.Save();
 
-        // 5. Atualiza o SaveSystem para indicar a nova cena
-        if (SaveSystem.Instance != null)
-        {
-            SaveData data = new SaveData { currentSceneName = targetSceneName };
-            SaveSystem.Instance.SetSaveData(data, 0);
-            SaveSystem.Instance.SaveDataInFile(0);
+        Debug.Log($"[SceneTransition] Transição para {targetSceneName}. O jogador surgirá no Spawn inicial da nova fase.");
 
-            if (activeSlot > 0)
-            {
-                SaveSystem.Instance.SetSaveData(data, activeSlot);
-                SaveSystem.Instance.SaveDataInFile(activeSlot);
-            }
-        }
-
-        Debug.Log($"[SceneTransition] Mudando para {targetSceneName}. Dados de moedas e checkpoint antigos apagados!");
-
-        // 6. Realiza a transição de cena
+        // 3. Executa a mudança de cena
         if (GameManager.Instance != null)
         {
             GameManager.Instance.LoadGameScene(targetSceneName);
