@@ -1322,6 +1322,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88bb69180f602c8409dffed8b734fa86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CheckpointTrigger
+  checkpointID: CP_Fase1_01
 --- !u!65 &340830514
 BoxCollider:
   m_ObjectHideFlags: 0
