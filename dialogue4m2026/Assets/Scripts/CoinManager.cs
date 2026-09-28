@@ -37,33 +37,23 @@ public class CoinManager : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        // 1. Se voltou ao Menu ou Boot, limpa a contagem
         if (scene.name == "Menu" || scene.name == "_Boot")
         {
             ResetCoinsForNewLevel();
         }
-        // 2. Se entrou em qualquer cena de Gameplay
         else if (scene.name.StartsWith("Gameplay"))
         {
+            // Pega o slot ativo da sessão (Slot 0 é o temporário/autosave)
             int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", 0);
 
-            // Lê a última cena registrada no Slot
-            string savedScene = PlayerPrefs.GetString($"Slot{activeSlot}_Scene", "");
-
-            // SE for um Novo Jogo (slot < 0) OU se a cena atual for DIFERENTE da cena salva no Slot
-            if (activeSlot < 0 || (!string.IsNullOrEmpty(savedScene) && savedScene != scene.name))
+            // SE for Novo Jogo explícito (slot -1), limpa tudo
+            if (activeSlot < 0)
             {
                 ResetCoinsForNewLevel();
-
-                // Atualiza o PlayerPrefs para a nova cena sem moedas antigas acumuladas
-                PlayerPrefs.SetString($"Slot{activeSlot}_Scene", scene.name);
-                SaveCheckpointCoins(activeSlot);
-
-                Debug.Log($"[CoinManager] Nova Fase detectada ({scene.name}). Contador de moedas zerado com sucesso!");
             }
             else
             {
-                // Se for a MESMA cena (ex: morreu e recarregou ou carregou o Save do Menu), lê as moedas do checkpoint
+                // Carrega as moedas e a lista de IDs do Slot ativo
                 LoadCheckpointCoins(activeSlot);
             }
         }
@@ -80,17 +70,12 @@ public class CoinManager : MonoBehaviour
             collectedCoinIDs.Add(coin.CoinID);
         }
 
-        Debug.Log($"[Moeda] Coletada: {coin.CoinID} | Total Atual: {currentCoins}");
+        Debug.Log($"[CoinManager] Moeda coletada: {coin.CoinID} | Total Atual: {currentCoins}");
     }
 
-    /// <summary>
-    /// Verifica se a moeda já foi pega nesta sessão OU se já estava salva em um checkpoint.
-    /// </summary>
     public bool IsCoinCollected(string coinID)
     {
         if (string.IsNullOrEmpty(coinID)) return false;
-        
-        // Verifica tanto no checkpoint quanto nas moedas coletadas na sessão atual
         return checkpointCoinIDs.Contains(coinID) || collectedCoinIDs.Contains(coinID);
     }
 
@@ -105,18 +90,16 @@ public class CoinManager : MonoBehaviour
         PlayerPrefs.SetString($"Slot{slotIndex}_CoinIDs", idsFormatted);
         PlayerPrefs.Save();
 
-        Debug.Log($"[CoinManager] Moedas salvas no Slot {slotIndex}! Total: {checkpointCoins}");
+        Debug.Log($"[CoinManager] Moedas e IDs salvas no Slot {slotIndex}! Total: {checkpointCoins} | IDs: {idsFormatted}");
     }
 
     public void LoadCheckpointCoins(int slotIndex)
     {
         checkpointCoins = PlayerPrefs.GetInt($"Slot{slotIndex}_Coins", 0);
-        
-        // Mantém a maior contagem de moedas caso já tenha coletado mais na sessão
-        if (currentCoins < checkpointCoins)
-        {
-            currentCoins = checkpointCoins;
-        }
+        currentCoins = checkpointCoins;
+
+        checkpointCoinIDs.Clear();
+        collectedCoinIDs.Clear();
 
         string idsFormatted = PlayerPrefs.GetString($"Slot{slotIndex}_CoinIDs", "");
         if (!string.IsNullOrEmpty(idsFormatted))
@@ -127,12 +110,12 @@ public class CoinManager : MonoBehaviour
                 if (!string.IsNullOrEmpty(id))
                 {
                     checkpointCoinIDs.Add(id);
-                    collectedCoinIDs.Add(id); // Garante que a lista de coletadas na sessão mantenha as do checkpoint
+                    collectedCoinIDs.Add(id);
                 }
             }
         }
 
-        Debug.Log($"[CoinManager] Moedas carregadas do Slot {slotIndex}: {currentCoins}");
+        Debug.Log($"[CoinManager] Carregado Slot {slotIndex}: {currentCoins} moedas | {checkpointCoinIDs.Count} moedas já coletadas.");
     }
 
     public void ResetCoinsForNewLevel()
@@ -141,6 +124,6 @@ public class CoinManager : MonoBehaviour
         checkpointCoins = 0;
         collectedCoinIDs.Clear();
         checkpointCoinIDs.Clear();
-        Debug.Log("[CoinManager] Contador de moedas redefinido.");
+        Debug.Log("[CoinManager] Moedas resetadas.");
     }
 }

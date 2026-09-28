@@ -54,9 +54,6 @@ public class PlayerSaveLoader : MonoBehaviour
         Debug.Log($"[PlayerSaveLoader] Checkpoint da cena {currentScene} carregado com SUCESSO! Posição: {targetPosition}");
     }
 
-    /// <summary>
-    /// Teletransporta o jogador com segurança desativando temporariamente os componentes de física
-    /// </summary>
     private void ForcePlayerPosition(Vector3 targetPosition)
     {
         CharacterController controller = GetComponent<CharacterController>();
