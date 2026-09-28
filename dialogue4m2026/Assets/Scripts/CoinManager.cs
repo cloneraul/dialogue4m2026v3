@@ -50,8 +50,7 @@ public class CoinManager : MonoBehaviour
             // Lê a última cena registrada no Slot
             string savedScene = PlayerPrefs.GetString($"Slot{activeSlot}_Scene", "");
 
-            // SE for um Novo Jogo (slot -1) OU se a cena atual for DIFERENTE da cena salva no Slot
-            // (Significa que o jogador acabou de mudar da Fase 1 para a Fase 2)
+            // SE for um Novo Jogo (slot < 0) OU se a cena atual for DIFERENTE da cena salva no Slot
             if (activeSlot < 0 || (!string.IsNullOrEmpty(savedScene) && savedScene != scene.name))
             {
                 ResetCoinsForNewLevel();
@@ -60,7 +59,7 @@ public class CoinManager : MonoBehaviour
                 PlayerPrefs.SetString($"Slot{activeSlot}_Scene", scene.name);
                 SaveCheckpointCoins(activeSlot);
 
-                Debug.Log($"[CoinManager] Nova Fase detetada ({scene.name}). Contador de moedas zerado com sucesso!");
+                Debug.Log($"[CoinManager] Nova Fase detectada ({scene.name}). Contador de moedas zerado com sucesso!");
             }
             else
             {
@@ -84,10 +83,15 @@ public class CoinManager : MonoBehaviour
         Debug.Log($"[Moeda] Coletada: {coin.CoinID} | Total Atual: {currentCoins}");
     }
 
+    /// <summary>
+    /// Verifica se a moeda já foi pega nesta sessão OU se já estava salva em um checkpoint.
+    /// </summary>
     public bool IsCoinCollected(string coinID)
     {
         if (string.IsNullOrEmpty(coinID)) return false;
-        return checkpointCoinIDs.Contains(coinID);
+        
+        // Verifica tanto no checkpoint quanto nas moedas coletadas na sessão atual
+        return checkpointCoinIDs.Contains(coinID) || collectedCoinIDs.Contains(coinID);
     }
 
     public void SaveCheckpointCoins(int slotIndex)
@@ -107,19 +111,25 @@ public class CoinManager : MonoBehaviour
     public void LoadCheckpointCoins(int slotIndex)
     {
         checkpointCoins = PlayerPrefs.GetInt($"Slot{slotIndex}_Coins", 0);
-        currentCoins = checkpointCoins;
+        
+        // Mantém a maior contagem de moedas caso já tenha coletado mais na sessão
+        if (currentCoins < checkpointCoins)
+        {
+            currentCoins = checkpointCoins;
+        }
 
         string idsFormatted = PlayerPrefs.GetString($"Slot{slotIndex}_CoinIDs", "");
         if (!string.IsNullOrEmpty(idsFormatted))
         {
             string[] ids = idsFormatted.Split(',');
-            checkpointCoinIDs = new HashSet<string>(ids);
-            collectedCoinIDs = new HashSet<string>(ids);
-        }
-        else
-        {
-            checkpointCoinIDs.Clear();
-            collectedCoinIDs.Clear();
+            foreach (string id in ids)
+            {
+                if (!string.IsNullOrEmpty(id))
+                {
+                    checkpointCoinIDs.Add(id);
+                    collectedCoinIDs.Add(id); // Garante que a lista de coletadas na sessão mantenha as do checkpoint
+                }
+            }
         }
 
         Debug.Log($"[CoinManager] Moedas carregadas do Slot {slotIndex}: {currentCoins}");
