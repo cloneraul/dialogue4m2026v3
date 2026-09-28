@@ -46,27 +46,28 @@ public class SceneTransitionInteractable : MonoBehaviour
     {
         NotifyInteractable(false);
 
-        int activeSlot = PlayerPrefs.GetInt("CurrentActiveSlot", 0);
+        // 1. Desvincula o Slot Permanente (1, 2 ou 3) da sessão imediata para NÃO sobrescrever os ficheiros dele na transição.
+        // A partir deste momento, a transição passa a ser processada unicamente na sessão temporária (Slot 0).
+        PlayerPrefs.SetInt("CurrentActiveSlot", 0);
 
-        // 1. Limpa o estado temporário de moedas
+        // 2. Limpa o contador e IDs das moedas na memória do jogo para a Fase 2
         if (CoinManager.Instance != null)
         {
             CoinManager.Instance.ResetCoinsForNewLevel();
         }
 
-        // 2. Remove o indicador de checkpoint ativado no Slot 0 e Slot Ativo para a nova cena carregar no Spawn inicial
-        PlayerPrefs.SetInt($"Slot{activeSlot}_HasCheckpoint", 0);
-        PlayerPrefs.SetInt("Slot0_HasCheckpoint", 0);
-
-        // Limpa chaves temporárias do autosave
+        // 3. Prepara o Slot 0 (Temporário) para a nova fase
+        PlayerPrefs.SetInt("Slot0_HasCheckpoint", 0); // Garante que o jogador surja no Spawn padrão da nova fase
+        PlayerPrefs.SetInt("Slot0_Level", 2);
+        PlayerPrefs.SetString("Slot0_Scene", targetSceneName);
         PlayerPrefs.DeleteKey("Slot0_Coins");
         PlayerPrefs.DeleteKey("Slot0_CoinIDs");
 
         PlayerPrefs.Save();
 
-        Debug.Log($"[SceneTransition] Transição para {targetSceneName}. O jogador surgirá no Spawn inicial da nova fase.");
+        Debug.Log($"[SceneTransition] Transição para {targetSceneName} realizada com segurança. O Slot manual foi preservado!");
 
-        // 3. Executa a mudança de cena
+        // 4. Executa a mudança de cena
         if (GameManager.Instance != null)
         {
             GameManager.Instance.LoadGameScene(targetSceneName);

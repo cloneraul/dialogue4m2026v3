@@ -76,7 +76,6 @@ public class MainMenuUI : MonoBehaviour
     {
         Debug.Log("[MainMenuUI] Iniciando NOVO JOGO. Zerando Slot 0 (Temporário)...");
 
-        // Define o Slot 0 como ativo e ZERA todas as chaves do Slot 0
         PlayerPrefs.SetInt("CurrentActiveSlot", 0);
 
         PlayerPrefs.DeleteKey("Slot0_HasCheckpoint");
@@ -119,21 +118,23 @@ public class MainMenuUI : MonoBehaviour
     {
         if (!CheckSlotHasSave(slotIndex)) return;
 
-        // Ativa o Slot Escolhido
+        // 1. Vincula o Slot Selecionado
         PlayerPrefs.SetInt("CurrentActiveSlot", slotIndex);
 
-        // Copia os dados do Slot permanente para o Slot 0
+        // 2. Copia os dados do Slot permanente para o Slot 0 de sessão
         CopySlotToAutosave(slotIndex);
 
+        // 3. Lê rigorosamente a cena gravada para ESSE slot específico no PlayerPrefs
         string targetScene = PlayerPrefs.GetString($"Slot{slotIndex}_Scene", "");
 
+        // Se não houver nome de cena gravado nas chaves do Slot, usa o nível gravado
         if (string.IsNullOrEmpty(targetScene))
         {
             int savedLevel = PlayerPrefs.GetInt($"Slot{slotIndex}_Level", 1);
             targetScene = (savedLevel == 2) ? "Gameplay 2" : "Gameplay";
         }
 
-        Debug.Log($"[MainMenuUI] Carregando Slot {slotIndex} -> Cena: {targetScene}");
+        Debug.Log($"[MainMenuUI] Slot {slotIndex} Selecionado -> Carregando Cena Exata do Slot: {targetScene}");
         LoadScene(targetScene);
     }
 

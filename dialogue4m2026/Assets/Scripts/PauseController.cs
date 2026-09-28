@@ -59,41 +59,18 @@ public class PauseController : MonoBehaviour
         // 2. Atalhos de teclado quando o jogo ESTIVER PAUSADO
         if (isPaused)
         {
-            // Atalhos do Painel Principal do Pause
             if (pauseMenuPanel != null && pauseMenuPanel.activeSelf)
             {
-                if (Keyboard.current.cKey.wasPressedThisFrame)
-                {
-                    ResumeGame(); // Tecla C -> Continuar
-                }
-                else if (Keyboard.current.sKey.wasPressedThisFrame)
-                {
-                    OpenSaveSlots(); // Tecla S -> Abrir Slots de Save
-                }
-                else if (Keyboard.current.mKey.wasPressedThisFrame)
-                {
-                    ReturnToMainMenu(); // Tecla M -> Voltar ao Menu
-                }
+                if (Keyboard.current.cKey.wasPressedThisFrame) ResumeGame();
+                else if (Keyboard.current.sKey.wasPressedThisFrame) OpenSaveSlots();
+                else if (Keyboard.current.mKey.wasPressedThisFrame) ReturnToMainMenu();
             }
-            // Atalhos no Painel de Slots (1, 2, 3 e Voltar)
             else if (saveSlotsPanel != null && saveSlotsPanel.activeSelf)
             {
-                if (Keyboard.current.digit1Key.wasPressedThisFrame || Keyboard.current.numpad1Key.wasPressedThisFrame)
-                {
-                    SaveProgressToTargetSlot(1);
-                }
-                else if (Keyboard.current.digit2Key.wasPressedThisFrame || Keyboard.current.numpad2Key.wasPressedThisFrame)
-                {
-                    SaveProgressToTargetSlot(2);
-                }
-                else if (Keyboard.current.digit3Key.wasPressedThisFrame || Keyboard.current.numpad3Key.wasPressedThisFrame)
-                {
-                    SaveProgressToTargetSlot(3);
-                }
-                else if (Keyboard.current.bKey.wasPressedThisFrame)
-                {
-                    OpenPauseMenu(); // Tecla B -> Voltar ao Menu de Pause
-                }
+                if (Keyboard.current.digit1Key.wasPressedThisFrame || Keyboard.current.numpad1Key.wasPressedThisFrame) SaveProgressToTargetSlot(1);
+                else if (Keyboard.current.digit2Key.wasPressedThisFrame || Keyboard.current.numpad2Key.wasPressedThisFrame) SaveProgressToTargetSlot(2);
+                else if (Keyboard.current.digit3Key.wasPressedThisFrame || Keyboard.current.numpad3Key.wasPressedThisFrame) SaveProgressToTargetSlot(3);
+                else if (Keyboard.current.bKey.wasPressedThisFrame) OpenPauseMenu();
             }
         }
     }
@@ -138,6 +115,7 @@ public class PauseController : MonoBehaviour
         GameObject player = GameObject.FindWithTag("Player");
         Vector3 savePos = (player != null) ? player.transform.position : Vector3.zero;
         string currentScene = SceneManager.GetActiveScene().name;
+        int levelNum = currentScene.EndsWith("2") ? 2 : 1;
 
         // Se passou por um Checkpoint recente nesta sessão, usa as coordenadas salvas dele
         if (PlayerPrefs.GetInt("Slot0_HasCheckpoint", 0) == 1)
@@ -150,11 +128,12 @@ public class PauseController : MonoBehaviour
         // Vincula a sessão atual oficialmente ao Slot escolhido
         PlayerPrefs.SetInt("CurrentActiveSlot", targetSlot);
 
-        // Salva nos PlayerPrefs do slot
+        // Salva rigorosamente nos PlayerPrefs do slot correto
         PlayerPrefs.SetFloat($"Slot{targetSlot}_PosX", savePos.x);
         PlayerPrefs.SetFloat($"Slot{targetSlot}_PosY", savePos.y);
         PlayerPrefs.SetFloat($"Slot{targetSlot}_PosZ", savePos.z);
         PlayerPrefs.SetInt($"Slot{targetSlot}_HasCheckpoint", 1);
+        PlayerPrefs.SetInt($"Slot{targetSlot}_Level", levelNum);
         PlayerPrefs.SetString($"Slot{targetSlot}_Scene", currentScene);
 
         if (CoinManager.Instance != null)
@@ -164,23 +143,30 @@ public class PauseController : MonoBehaviour
 
         PlayerPrefs.Save();
 
-        // Grava no arquivo encriptado físico
+        // Grava no arquivo físico do SaveSystem usand o índice de memória 0 com segurança
         if (SaveSystem.Instance != null)
         {
-            SaveData data = new SaveData();
-            data.SetPlayerPosition(savePos);
-            data.currentSceneName = currentScene;
-
-            if (CoinManager.Instance != null)
+            try
             {
-                data.totalCoins = CoinManager.Instance.CurrentCoins;
-            }
+                SaveData data = new SaveData();
+                data.SetPlayerPosition(savePos);
+                data.currentSceneName = currentScene;
 
-            SaveSystem.Instance.SetSaveData(data, targetSlot);
-            SaveSystem.Instance.SaveDataInFile(targetSlot);
+                if (CoinManager.Instance != null)
+                {
+                    data.totalCoins = CoinManager.Instance.CurrentCoins;
+                }
+
+                SaveSystem.Instance.SetSaveData(data, 0);
+                SaveSystem.Instance.SaveDataInFile(targetSlot);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[PauseController] Erro ao gravar ficheiro no SaveSystem: {e.Message}");
+            }
         }
 
-        Debug.Log($"[PauseController] Sessão vinculada e salva permanentemente no Slot {targetSlot}!");
+        Debug.Log($"[PauseController] Progresso gravado no Slot {targetSlot} | Cena: {currentScene}");
         ResumeGame();
     }
 
