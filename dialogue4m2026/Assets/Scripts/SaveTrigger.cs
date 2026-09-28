@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -8,6 +9,7 @@ public class SaveTrigger : MonoBehaviour
     [SerializeField] private string checkpointID;
 
     private bool hasBeenTriggeredInSession;
+    private bool canTrigger;
 
     private void Awake()
     {
@@ -17,8 +19,18 @@ public class SaveTrigger : MonoBehaviour
         }
     }
 
+    private IEnumerator Start()
+    {
+        // Trava temporária: Aguarda 0.5 segundos após a cena carregar/teletransportar
+        // para evitar que o gatilho ative sozinho caso o Player já nasça em cima dele.
+        canTrigger = false;
+        yield return new WaitForSecondsRealtime(0.5f);
+        canTrigger = true;
+    }
+
     private void OnTriggerEnter(Collider other)
     {
+        if (!canTrigger) return;
         if (!other.CompareTag("Player")) return;
 
         // Se já foi ativado nesta caminhada/sessão, não repete
@@ -49,7 +61,7 @@ public class SaveTrigger : MonoBehaviour
         PlayerPrefs.SetInt("HasPendingSave", 1);
         PlayerPrefs.Save();
 
-        Debug.Log($"[SaveTrigger] Checkpoint '{checkpointID}' ativado na posição do Player: {playerPos}");
+        Debug.Log($"[SaveTrigger] Checkpoint '{checkpointID}' ativado com sucesso! Posição: {playerPos}");
     }
 
     public void ResetTriggerSession()

@@ -23,10 +23,14 @@ public class PauseController : MonoBehaviour
     [Header("Configurações de Cena")]
     [SerializeField] private string menuSceneName = "Menu";
 
-    private bool isPaused = false;
+    private bool isPaused;
 
     private void Start()
     {
+        // 1. FORÇA a trava de salvamento a iniciar bloqueada (0) sempre que a cena carrega
+        PlayerPrefs.SetInt("HasPendingSave", 0);
+        PlayerPrefs.Save();
+
         if (pauseMenuPanel != null) pauseMenuPanel.SetActive(false);
         if (saveSlotsPanel != null) saveSlotsPanel.SetActive(false);
 
@@ -196,6 +200,10 @@ public class PauseController : MonoBehaviour
     public void ReturnToMainMenu()
     {
         Time.timeScale = 1f;
+
+        // 2. Limpa a trava ao sair para o menu principal
+        PlayerPrefs.SetInt("HasPendingSave", 0);
+        PlayerPrefs.Save();
 
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
