@@ -118,6 +118,14 @@ public class CoinManager : MonoBehaviour
         Debug.Log($"[CoinManager] Carregado Slot {slotIndex}: {currentCoins} moedas | {checkpointCoinIDs.Count} moedas já coletadas.");
     }
 
+    /// <summary>
+    /// Alias para manter compatibilidade com chamadas de carregamento de slot
+    /// </summary>
+    public void LoadCoinsFromSlot(int slotIndex)
+    {
+        LoadCheckpointCoins(slotIndex);
+    }
+
     public void ResetCoinsForNewLevel()
     {
         currentCoins = 0;

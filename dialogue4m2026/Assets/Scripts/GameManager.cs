@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -41,6 +42,9 @@ public class GameManager : MonoBehaviour
     // Chamado automaticamente SEMPRE que uma cena termina de carregar
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        // Garante que o tempo volte ao normal ao carregar qualquer cena
+        Time.timeScale = 1f;
+
         // 1. Se estiver no Menu (ou _Boot), garante que a cena GUI seja descarregada
         if (scene.name == "Menu" || scene.name == "_Boot")
         {

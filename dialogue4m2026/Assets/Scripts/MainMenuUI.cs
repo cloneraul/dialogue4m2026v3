@@ -74,11 +74,11 @@ public class MainMenuUI : MonoBehaviour
 
     public void OnClick_StartNewGameDirectly()
     {
-        Debug.Log("[MainMenuUI] Iniciando NOVO JOGO. Zerando Slot 0 (Temporário)...");
+        Debug.Log("[MainMenuUI] Iniciando NOVO JOGO. Resetando Slot 0 (Temporário)...");
 
         PlayerPrefs.SetInt("CurrentActiveSlot", 0);
 
-        // --- TRAVA DE SEGURANÇA DO BOTAO SALVAR ---
+        // Sem checkpoint ativo no início do jogo -> salvamento pendente = 0
         PlayerPrefs.SetInt("HasPendingSave", 0);
 
         PlayerPrefs.DeleteKey("Slot0_HasCheckpoint");
@@ -87,6 +87,8 @@ public class MainMenuUI : MonoBehaviour
         PlayerPrefs.DeleteKey("Slot0_PosZ");
         PlayerPrefs.DeleteKey("Slot0_Coins");
         PlayerPrefs.DeleteKey("Slot0_CoinIDs");
+        PlayerPrefs.DeleteKey("Slot0_UsedCheckpoints"); // Limpa checkpoints ativados
+        
         PlayerPrefs.SetInt("Slot0_Level", 1);
         PlayerPrefs.SetString("Slot0_Scene", "Gameplay");
         PlayerPrefs.Save();
@@ -124,23 +126,22 @@ public class MainMenuUI : MonoBehaviour
         // 1. Vincula o Slot Selecionado
         PlayerPrefs.SetInt("CurrentActiveSlot", slotIndex);
 
-        // 2. FORÇA a trava de permissão de salvar para BLOQUEADO (0) na entrada do jogo
+        // 2. Garante que entra sem salvamento pendente acumulado
         PlayerPrefs.SetInt("HasPendingSave", 0);
 
         // 3. Copia os dados do Slot permanente para o Slot 0 de sessão
         CopySlotToAutosave(slotIndex);
 
-        // 4. Lê rigorosamente a cena gravada para ESSE slot específico no PlayerPrefs
+        // 4. Lê a cena gravada para esse slot
         string targetScene = PlayerPrefs.GetString($"Slot{slotIndex}_Scene", "");
 
-        // Se não houver nome de cena gravado nas chaves do Slot, usa o nível gravado
         if (string.IsNullOrEmpty(targetScene))
         {
             int savedLevel = PlayerPrefs.GetInt($"Slot{slotIndex}_Level", 1);
             targetScene = (savedLevel == 2) ? "Gameplay 2" : "Gameplay";
         }
 
-        Debug.Log($"[MainMenuUI] Slot {slotIndex} Selecionado -> Carregando Cena Exata do Slot: {targetScene} | Botão Salvar Bloqueado.");
+        Debug.Log($"[MainMenuUI] Slot {slotIndex} Selecionado -> Carregando Cena: {targetScene}");
         LoadScene(targetScene);
     }
 
@@ -156,6 +157,7 @@ public class MainMenuUI : MonoBehaviour
         string scene = PlayerPrefs.GetString($"Slot{sourceSlot}_Scene", "Gameplay");
         int coins = PlayerPrefs.GetInt($"Slot{sourceSlot}_Coins", 0);
         string coinIDs = PlayerPrefs.GetString($"Slot{sourceSlot}_CoinIDs", "");
+        string usedCheckpoints = PlayerPrefs.GetString($"Slot{sourceSlot}_UsedCheckpoints", "");
 
         PlayerPrefs.SetFloat("Slot0_PosX", x);
         PlayerPrefs.SetFloat("Slot0_PosY", y);
@@ -165,8 +167,9 @@ public class MainMenuUI : MonoBehaviour
         PlayerPrefs.SetString("Slot0_Scene", scene);
         PlayerPrefs.SetInt("Slot0_Coins", coins);
         PlayerPrefs.SetString("Slot0_CoinIDs", coinIDs);
+        PlayerPrefs.SetString("Slot0_UsedCheckpoints", usedCheckpoints);
 
-        // Garante que a cópia de sessão comece com permissão de salvar DESATIVADA
+        // Ao carregar um slot, o jogador ainda não passou por um NOVO checkpoint na sessão atual
         PlayerPrefs.SetInt("HasPendingSave", 0);
 
         PlayerPrefs.Save();
